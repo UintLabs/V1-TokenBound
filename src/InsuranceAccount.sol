@@ -4,13 +4,18 @@ pragma solidity ^0.8.19;
 
 import { IERC6551Account } from "src/interfaces/IERC6551Account.sol";
 import { ERC6551AccountLib } from "src/lib/ERC6551AccountLib.sol";
-
 import { IERC165 } from "openzeppelin-contracts/utils/introspection/IERC165.sol";
 import { IERC721 } from "openzeppelin-contracts/token/ERC721/IERC721.sol";
-import { IERC721Reciever } from "openzeppelin-contracts/token/ERC721/IERC721Reciever.sol";
-import { IERC1155Receiver } from "openzeppelin-contracts/token/ERC1155/IERC1155Reciever.sol";
+import { IERC721Receiver } from "openzeppelin-contracts/token/ERC721/IERC721Receiver.sol";
+import { IERC1155Receiver } from "openzeppelin-contracts/token/ERC1155/IERC1155Receiver.sol";
+import { IERC1271 } from "openzeppelin-contracts/interfaces/IERC1271.sol";
+import { SignatureChecker } from "openzeppelin-contracts/utils/cryptography/SignatureChecker.sol";
+import { UUPSUpgradeable } from "openzeppelin-contracts/proxy/utils//UUPSUpgradeable.sol";
+import { ECDSA } from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
 
+import { BaseAccount as BaseERC4337Account, IEntryPoint, UserOperation } from "account-abstraction/core/BaseAccount.sol";
 
+import { IAccountGuardian } from "src/interfaces/IAccountGuardian.sol";
 
 error NotAuthorized();
 error InvalidInput();
@@ -22,7 +27,8 @@ error OwnershipCycle();
 /**
  * @title A smart contract account owned by a single ERC721 token
  */
-contract Account is
+
+contract InsuranceAccount is
     IERC165,
     IERC1271,
     IERC6551Account,
@@ -48,11 +54,7 @@ contract Account is
     /// @dev mapping from owner => caller => has permissions
     mapping(address => mapping(address => bool)) public permissions;
 
-    event OverrideUpdated(
-        address owner,
-        bytes4 selector,
-        address implementation
-    );
+    event OverrideUpdated(address owner, bytes4 selector, address implementation);
 
     event PermissionUpdated(address owner, address caller, bool hasPermission);
 
@@ -77,8 +79,9 @@ contract Account is
     }
 
     constructor(address _guardian, address entryPoint_) {
-        if (_guardian == address(0) || entryPoint_ == address(0))
+        if (_guardian == address(0) || entryPoint_ == address(0)) {
             revert InvalidInput();
+        }
 
         _entryPoint = entryPoint_;
         guardian = _guardian;
@@ -99,19 +102,20 @@ contract Account is
         address to,
         uint256 value,
         bytes calldata data
-    ) external payable onlyAuthorized onlyUnlocked returns (bytes memory) {
-        emit TransactionExecuted(to, value, data);
-
+    )
+        external
+        payable
+        onlyAuthorized
+        onlyUnlocked
+        returns (bytes memory)
+    {
         _incrementNonce();
 
         return _call(to, value, data);
     }
 
     /// @dev sets the implementation address for a given function call
-    function setOverrides(
-        bytes4[] calldata selectors,
-        address[] calldata implementations
-    ) external onlyUnlocked {
+    function setOverrides(bytes4[] calldata selectors, address[] calldata implementations) external onlyUnlocked {
         address _owner = owner();
         if (msg.sender != _owner) revert NotAuthorized();
 
@@ -128,10 +132,7 @@ contract Account is
     }
 
     /// @dev grants a given caller execution permissions
-    function setPermissions(
-        address[] calldata callers,
-        bool[] calldata _permissions
-    ) external onlyUnlocked {
+    function setPermissions(address[] calldata callers, bool[] calldata _permissions) external onlyUnlocked {
         address _owner = owner();
         if (msg.sender != _owner) revert NotAuthorized();
 
@@ -149,8 +150,9 @@ contract Account is
 
     /// @dev locks the account until a certain timestamp
     function lock(uint256 _lockedUntil) external onlyOwner onlyUnlocked {
-        if (_lockedUntil > block.timestamp + 365 days)
+        if (_lockedUntil > block.timestamp + 365 days) {
             revert ExceedsMaxLockTime();
+        }
 
         lockedUntil = _lockedUntil;
 
@@ -166,18 +168,10 @@ contract Account is
 
     /// @dev EIP-1271 signature validation. By default, only the owner of the account is permissioned to sign.
     /// This function can be overriden.
-    function isValidSignature(bytes32 hash, bytes memory signature)
-        external
-        view
-        returns (bytes4 magicValue)
-    {
+    function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4 magicValue) {
         _handleOverrideStatic();
 
-        bool isValid = SignatureChecker.isValidSignatureNow(
-            owner(),
-            hash,
-            signature
-        );
+        bool isValid = SignatureChecker.isValidSignatureNow(owner(), hash, signature);
 
         if (isValid) {
             return IERC1271.isValidSignature.selector;
@@ -188,15 +182,7 @@ contract Account is
 
     /// @dev Returns the EIP-155 chain ID, token contract address, and token ID for the token that
     /// owns this account.
-    function token()
-        external
-        view
-        returns (
-            uint256 chainId,
-            address tokenContract,
-            uint256 tokenId
-        )
-    {
+    function token() external view returns (uint256 chainId, address tokenContract, uint256 tokenId) {
         return ERC6551AccountLib.token();
     }
 
@@ -207,8 +193,9 @@ contract Account is
 
     /// @dev Increments the account nonce if the caller is not the ERC-4337 entry point
     function _incrementNonce() internal {
-        if (msg.sender != _entryPoint)
+        if (msg.sender != _entryPoint) {
             IEntryPoint(_entryPoint).incrementNonce(0);
+        }
     }
 
     /// @dev Return the ERC-4337 entry point address
@@ -219,11 +206,7 @@ contract Account is
     /// @dev Returns the owner of the ERC-721 token which owns this account. By default, the owner
     /// of the token has full permissions on the account.
     function owner() public view returns (address) {
-        (
-            uint256 chainId,
-            address tokenContract,
-            uint256 tokenId
-        ) = ERC6551AccountLib.token();
+        (uint256 chainId, address tokenContract, uint256 tokenId) = ERC6551AccountLib.token();
 
         if (chainId != block.chainid) return address(0);
 
@@ -235,11 +218,7 @@ contract Account is
         // authorize entrypoint for 4337 transactions
         if (caller == _entryPoint) return true;
 
-        (
-            uint256 chainId,
-            address tokenContract,
-            uint256 tokenId
-        ) = ERC6551AccountLib.token();
+        (uint256 chainId, address tokenContract, uint256 tokenId) = ERC6551AccountLib.token();
         address _owner = IERC721(tokenContract).ownerOf(tokenId);
 
         // authorize token owner
@@ -249,25 +228,16 @@ contract Account is
         if (permissions[_owner][caller]) return true;
 
         // authorize trusted cross-chain executors if not on native chain
-        if (
-            chainId != block.chainid &&
-            IAccountGuardian(guardian).isTrustedExecutor(caller)
-        ) return true;
+        if (chainId != block.chainid && IAccountGuardian(guardian).isTrustedExecutor(caller)) return true;
 
         return false;
     }
 
     /// @dev Returns true if a given interfaceId is supported by this account. This method can be
     /// extended by an override.
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override
-        returns (bool)
-    {
-        bool defaultSupport = interfaceId == type(IERC165).interfaceId ||
-            interfaceId == type(IERC1155Receiver).interfaceId ||
-            interfaceId == type(IERC6551Account).interfaceId;
+    function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
+        bool defaultSupport = interfaceId == type(IERC165).interfaceId
+            || interfaceId == type(IERC1155Receiver).interfaceId || interfaceId == type(IERC6551Account).interfaceId;
 
         if (defaultSupport) return true;
 
@@ -284,20 +254,19 @@ contract Account is
         address,
         uint256 receivedTokenId,
         bytes memory
-    ) public view override returns (bytes4) {
+    )
+        public
+        view
+        override
+        returns (bytes4)
+    {
         _handleOverrideStatic();
 
-        (
-            uint256 chainId,
-            address tokenContract,
-            uint256 tokenId
-        ) = ERC6551AccountLib.token();
+        (uint256 chainId, address tokenContract, uint256 tokenId) = ERC6551AccountLib.token();
 
-        if (
-            chainId == block.chainid &&
-            tokenContract == msg.sender &&
-            tokenId == receivedTokenId
-        ) revert OwnershipCycle();
+        if (chainId == block.chainid && tokenContract == msg.sender && tokenId == receivedTokenId) {
+            revert OwnershipCycle();
+        }
 
         return this.onERC721Received.selector;
     }
@@ -309,7 +278,12 @@ contract Account is
         uint256,
         uint256,
         bytes memory
-    ) public view override returns (bytes4) {
+    )
+        public
+        view
+        override
+        returns (bytes4)
+    {
         _handleOverrideStatic();
 
         return this.onERC1155Received.selector;
@@ -322,7 +296,12 @@ contract Account is
         uint256[] memory,
         uint256[] memory,
         bytes memory
-    ) public view override returns (bytes4) {
+    )
+        public
+        view
+        override
+        returns (bytes4)
+    {
         _handleOverrideStatic();
 
         return this.onERC1155BatchReceived.selector;
@@ -330,15 +309,8 @@ contract Account is
 
     /// @dev Contract upgrades can only be performed by the owner and the new implementation must
     /// be trusted
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        view
-        override
-        onlyOwner
-    {
-        bool isTrusted = IAccountGuardian(guardian).isTrustedImplementation(
-            newImplementation
-        );
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+        bool isTrusted = IAccountGuardian(guardian).isTrustedImplementation(newImplementation);
         if (!isTrusted) revert UntrustedImplementation();
     }
 
@@ -346,11 +318,14 @@ contract Account is
     function _validateSignature(
         UserOperation calldata userOp,
         bytes32 userOpHash
-    ) internal view override returns (uint256 validationData) {
-        bool isValid = this.isValidSignature(
-            userOpHash.toEthSignedMessageHash(),
-            userOp.signature
-        ) == IERC1271.isValidSignature.selector;
+    )
+        internal
+        view
+        override
+        returns (uint256 validationData)
+    {
+        bool isValid = this.isValidSignature(userOpHash.toEthSignedMessageHash(), userOp.signature)
+            == IERC1271.isValidSignature.selector;
 
         if (isValid) {
             return 0;
@@ -360,13 +335,9 @@ contract Account is
     }
 
     /// @dev Executes a low-level call
-    function _call(
-        address to,
-        uint256 value,
-        bytes calldata data
-    ) internal returns (bytes memory result) {
+    function _call(address to, uint256 value, bytes calldata data) internal returns (bytes memory result) {
         bool success;
-        (success, result) = to.call{value: value}(data);
+        (success, result) = to.call{ value: value }(data);
 
         if (!success) {
             assembly {
@@ -388,11 +359,7 @@ contract Account is
     }
 
     /// @dev Executes a low-level static call
-    function _callStatic(address to, bytes calldata data)
-        internal
-        view
-        returns (bytes memory result)
-    {
+    function _callStatic(address to, bytes calldata data) internal view returns (bytes memory result) {
         bool success;
         (success, result) = to.staticcall(data);
 
