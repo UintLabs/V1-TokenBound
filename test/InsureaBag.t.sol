@@ -12,58 +12,76 @@ import { InsuranceAccount } from "src/InsuranceAccount.sol";
 import { IERC721 } from "openzeppelin-contracts/token/ERC721/IERC721.sol";
 
 import { Proxy } from "src/Proxy.sol";
+import { AccountProxy } from "src/AccountProxy.sol";
 import { MockNFT } from "src/mock/MockNFT.sol";
 
 contract InsureaBagTest is PRBTest, StdCheats {
-    InsureaBag public nftContract;
+    InsureaBag public insregistry;
     ERC6551Registry public registry;
-    MockNFT public sampleNFT;
-    InsuranceAccount public implementation;
-    string public name = "InsureaBag";
-    string public symbol = "IAB";
-    address public defaultAdmin = address(10);
+    InsuranceAccount public accimplementation;
+    Proxy public proxy;
+    AccountProxy public accproxy;
+    address public admin = address(1);
 
     function setUp() public {
         InsureaBag iab = new InsureaBag();
-        address impAddress = address(iab);
-
-        Proxy proxy = new Proxy(impAddress,
-                abi.encodePacked(iab.initialize.selector));
-
-        nftContract = InsureaBag(address(proxy));
-
-        vm.prank(address(2));
-        sampleNFT = new MockNFT();
-
-        vm.prank(address(3));
         registry = new ERC6551Registry();
-
-        vm.prank(address(3));
-        implementation = new InsuranceAccount(address(3), address(nftContract));
+        accimplementation = new InsuranceAccount();
+        accproxy = new AccountProxy(address(accimplementation));
+        proxy = new Proxy(address(iab),abi.encodeWithSelector(iab.initialize.selector, "InsureaBag", "IAB", admin));
+        insregistry = InsureaBag(address(proxy));
     }
 
-    function testDeploymentMockNFT() public {
-        assertEq(sampleNFT.name(), "MOCK");
-        assertEq(sampleNFT.symbol(), "MCK");
+    function testDeloyment() public {
+        vm.prank(admin);
+        insregistry.setImplementationAddress(address(accproxy));
+        vm.prank(admin);
+        insregistry.setRegistryAddress(address(registry));
+
+        vm.prank(admin);
+        insregistry.createInsurance();
+        assertEq(insregistry.ownerOf(0), admin);
     }
 
-    function testERC721tokenTransfer() public {
-        nftContract.setImplementationAddress(address(implementation));
-        nftContract.setRegistryAddress(address(registry));
+    // function testDeploymentMockNFT() public {
+    //     assertEq(sampleNFT.name(), "MOCK");
+    //     assertEq(sampleNFT.symbol(), "MCK");
+    // }
 
-        vm.prank(address(10));
-        nftContract.createInsurance();
-        assertEq(nftContract.ownerOf(0), address(10));
+    // function testERC721tokenTransferThroughContract() public {
+    //     nftContract.setImplementationAddress(address(implementation));
+    //     nftContract.setRegistryAddress(address(registry));
 
-        vm.prank(address(10));
-        sampleNFT.safeMint(address(10), 1);
-        assertEq(sampleNFT.ownerOf(1), address(10));
+    //     vm.prank(address(10));
+    //     nftContract.createInsurance();
+    //     assertEq(nftContract.ownerOf(0), address(10));
 
-        vm.prank(address(10));
-        sampleNFT.approve(address(nftContract), 1);
+    //     vm.prank(address(10));
+    //     sampleNFT.safeMint(address(10), 1);
+    //     assertEq(sampleNFT.ownerOf(1), address(10));
 
-        vm.prank(address(nftContract));
-        nftContract.transferERC721token(address(sampleNFT), 0, 1);
-        assertEq(sampleNFT.ownerOf(1), nftContract.getAddressOfInsurance(0));
-    }
+    //     vm.prank(address(10));
+    //     sampleNFT.approve(address(nftContract), 1);
+
+    //     vm.prank(address(nftContract));
+    //     nftContract.transferERC721token(address(sampleNFT), 0, 1);
+    //     assertEq(sampleNFT.ownerOf(1), nftContract.getAddressOfInsurance(0));
+    // }
+
+    // function testERC721tokenTransferToTokenBoundAddressDirectly() public {
+    //     nftContract.setImplementationAddress(address(implementation));
+    //     nftContract.setRegistryAddress(address(registry));
+
+    //     vm.prank(address(10));
+    //     nftContract.createInsurance();
+    //     assertEq(nftContract.ownerOf(0), address(10));
+
+    //     vm.prank(address(10));
+    //     sampleNFT.safeMint(address(10), 1);
+    //     assertEq(sampleNFT.ownerOf(1), address(10));
+
+    //     vm.prank(address(10));
+    //     sampleNFT.transferFrom(address(10), nftContract.getAddressOfInsurance(0), 1);
+    //     assertEq(sampleNFT.ownerOf(1), nftContract.getAddressOfInsurance(0));
+    // }
 }

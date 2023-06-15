@@ -10,6 +10,7 @@ import { BitMapsUpgradeable } from "openzeppelin-contracts-upgradeable/utils/str
 import { ERC721Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import { CountersUpgradeable } from "openzeppelin-contracts-upgradeable/utils/CountersUpgradeable.sol";
 import { IERC6551Registry } from "src/interfaces/IERC6551Registry.sol";
+import { ERC6551BytecodeLib } from "src/lib/ERC6551BytecodeLib.sol";
 import { ERC1155ReceiverUpgradeable } from
     "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC1155/utils/ERC1155ReceiverUpgradeable.sol";
 import { ERC721HolderUpgradeable } from
@@ -38,11 +39,11 @@ contract InsureaBag is
 
     bool public insuranceStarted;
 
-    function initialize() external initializer {
-        __ERC721_init("InsureaBag", "IAB");
+    function initialize(string memory _name, string memory _symbol, address _address) external initializer {
+        __ERC721_init(_name, _symbol);
         __AccessControl_init();
         __ReentrancyGuard_init();
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, _address);
     }
 
     function setImplementationAddress(address _address) external onlyRole(DEFAULT_ADMIN_ROLE) {
