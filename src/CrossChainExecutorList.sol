@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {Ownable2Step} from "openzeppelin-contracts/access/Ownable2Step.sol";
+import { Ownable2Step } from "openzeppelin-contracts/access/Ownable2Step.sol";
 
 contract CrossChainExecutorList is Ownable2Step {
     mapping(uint256 => mapping(address => bool)) public isCrossChainExecutor;
@@ -13,11 +13,7 @@ contract CrossChainExecutorList is Ownable2Step {
      * @param executor the address of the executor
      * @param enabled true if executor should be enabled, false otherwise
      */
-    function setCrossChainExecutor(
-        uint256 chainId,
-        address executor,
-        bool enabled
-    ) external onlyOwner {
+    function setCrossChainExecutor(uint256 chainId, address executor, bool enabled) external onlyOwner {
         isCrossChainExecutor[chainId][executor] = enabled;
     }
 }

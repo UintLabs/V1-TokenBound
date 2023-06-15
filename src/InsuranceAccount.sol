@@ -1,23 +1,25 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {IERC721} from "openzeppelin-contracts/token/ERC721/IERC721.sol";
-import {IERC1271} from "openzeppelin-contracts/interfaces/IERC1271.sol";
-import {SignatureChecker} from "openzeppelin-contracts/utils/cryptography/SignatureChecker.sol";
+import { IERC721 } from "openzeppelin-contracts/token/ERC721/IERC721.sol";
+import { IERC1271 } from "openzeppelin-contracts/interfaces/IERC1271.sol";
+import { SignatureChecker } from "openzeppelin-contracts/utils/cryptography/SignatureChecker.sol";
 
-import {IERC165} from "openzeppelin-contracts/utils/introspection/IERC165.sol";
-import {IERC1155Receiver} from "openzeppelin-contracts/token/ERC1155/IERC1155Receiver.sol";
+import { IERC165 } from "openzeppelin-contracts/utils/introspection/IERC165.sol";
+import { IERC1155Receiver } from "openzeppelin-contracts/token/ERC1155/IERC1155Receiver.sol";
+import { ERC1155Receiver } from "openzeppelin-contracts/token/ERC1155/utils/ERC1155Receiver.sol";
 
-import "./CrossChainExecutorList.sol";
-import "./MinimalReceiver.sol";
-import "./interfaces/IAccount.sol";
-import "./lib/MinimalProxyStore.sol";
+
+import { CrossChainExecutorList } from "src/CrossChainExecutorList.sol";
+import { MinimalReceiver } from "src/MinimalReceiver.sol";
+import { IInsuranceAccount } from "src/interfaces/IInsuranceAccount.sol";
+import { MinimalProxyStore } from "src/lib/MinimalProxyStore.sol";
 
 /**
  * @title A smart contract wallet owned by a single ERC721 token
  * @author Jayden Windle (jaydenwindle)
  */
-contract InsuranceAccount is IERC165, IERC1271, IAccount, MinimalReceiver {
+contract InsuranceAccount is IERC165, IERC1271, IInsuranceAccount, MinimalReceiver {
     error NotAuthorized();
     error AccountLocked();
     error ExceedsMaxLockTime();
@@ -45,9 +47,7 @@ contract InsuranceAccount is IERC165, IERC1271, IAccount, MinimalReceiver {
     event ExecutorUpdated(address owner, address executor);
 
     constructor(address _crossChainExecutorList) {
-        crossChainExecutorList = CrossChainExecutorList(
-            _crossChainExecutorList
-        );
+        crossChainExecutorList = CrossChainExecutorList(_crossChainExecutorList);
     }
 
     /**
@@ -61,12 +61,7 @@ contract InsuranceAccount is IERC165, IERC1271, IAccount, MinimalReceiver {
     /**
      * @dev If account is unlocked and an executor is set, pass call to executor
      */
-    fallback(bytes calldata data)
-        external
-        payable
-        onlyUnlocked
-        returns (bytes memory result)
-    {
+    fallback(bytes calldata data) external payable onlyUnlocked returns (bytes memory result) {
         address _owner = owner();
         address _executor = executor[_owner];
 
@@ -87,7 +82,12 @@ contract InsuranceAccount is IERC165, IERC1271, IAccount, MinimalReceiver {
         address to,
         uint256 value,
         bytes calldata data
-    ) external payable onlyUnlocked returns (bytes memory result) {
+    )
+        external
+        payable
+        onlyUnlocked
+        returns (bytes memory result)
+    {
         address _owner = owner();
         if (msg.sender != _owner) revert NotAuthorized();
 
@@ -105,7 +105,12 @@ contract InsuranceAccount is IERC165, IERC1271, IAccount, MinimalReceiver {
         address to,
         uint256 value,
         bytes calldata data
-    ) external payable onlyUnlocked returns (bytes memory result) {
+    )
+        external
+        payable
+        onlyUnlocked
+        returns (bytes memory result)
+    {
         address _executor = executor[owner()];
         if (msg.sender != _executor) revert NotAuthorized();
 
@@ -124,8 +129,13 @@ contract InsuranceAccount is IERC165, IERC1271, IAccount, MinimalReceiver {
         address to,
         uint256 value,
         bytes calldata data
-    ) external payable onlyUnlocked returns (bytes memory result) {
-        (uint256 chainId, , ) = context();
+    )
+        external
+        payable
+        onlyUnlocked
+        returns (bytes memory result)
+    {
+        (uint256 chainId,,) = context();
 
         if (chainId == block.chainid) {
             revert NotAuthorized();
@@ -159,8 +169,9 @@ contract InsuranceAccount is IERC165, IERC1271, IAccount, MinimalReceiver {
      * @param _unlockTimestamp timestamp when the account will become unlocked
      */
     function lock(uint256 _unlockTimestamp) external onlyUnlocked {
-        if (_unlockTimestamp > block.timestamp + 365 days)
+        if (_unlockTimestamp > block.timestamp + 365 days) {
             revert ExceedsMaxLockTime();
+        }
 
         address _owner = owner();
         if (_owner != msg.sender) revert NotAuthorized();
@@ -207,11 +218,7 @@ contract InsuranceAccount is IERC165, IERC1271, IAccount, MinimalReceiver {
      * @param hash      Hash of the signed data
      * @param signature Signature to validate
      */
-    function isValidSignature(bytes32 hash, bytes memory signature)
-        external
-        view
-        returns (bytes4 magicValue)
-    {
+    function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4 magicValue) {
         // If account is locked, disable signing
         if (unlockTimestamp > block.timestamp) return "";
 
@@ -219,10 +226,7 @@ contract InsuranceAccount is IERC165, IERC1271, IAccount, MinimalReceiver {
         address _owner = owner();
         address _executor = executor[_owner];
 
-        if (
-            _executor != address(0) &&
-            SignatureChecker.isValidSignatureNow(_executor, hash, signature)
-        ) {
+        if (_executor != address(0) && SignatureChecker.isValidSignatureNow(_executor, hash, signature)) {
             return IERC1271.isValidSignature.selector;
         }
 
@@ -249,9 +253,8 @@ contract InsuranceAccount is IERC165, IERC1271, IAccount, MinimalReceiver {
     {
         // default interface support
         if (
-            interfaceId == type(IAccount).interfaceId ||
-            interfaceId == type(IERC1155Receiver).interfaceId ||
-            interfaceId == type(IERC165).interfaceId
+            interfaceId == type(IInsuranceAccount).interfaceId || interfaceId == type(IERC1155Receiver).interfaceId
+                || interfaceId == type(IERC165).interfaceId
         ) {
             return true;
         }
@@ -263,9 +266,7 @@ contract InsuranceAccount is IERC165, IERC1271, IAccount, MinimalReceiver {
         }
 
         // if interface is not supported by default, check executor
-        try IERC165(_executor).supportsInterface(interfaceId) returns (
-            bool _supportsInterface
-        ) {
+        try IERC165(_executor).supportsInterface(interfaceId) returns (bool _supportsInterface) {
             return _supportsInterface;
         } catch {
             return false;
@@ -293,23 +294,11 @@ contract InsuranceAccount is IERC165, IERC1271, IAccount, MinimalReceiver {
      * @return tokenCollection the contract address of the  ERC721 token which owns this account
      * @return tokenId the tokenId of the  ERC721 token which owns this account
      */
-    function token()
-        public
-        view
-        returns (address tokenCollection, uint256 tokenId)
-    {
+    function token() public view returns (address tokenCollection, uint256 tokenId) {
         (, tokenCollection, tokenId) = context();
     }
 
-    function context()
-        internal
-        view
-        returns (
-            uint256,
-            address,
-            uint256
-        )
-    {
+    function context() internal view returns (uint256, address, uint256) {
         bytes memory rawContext = MinimalProxyStore.getContext(address(this));
         if (rawContext.length == 0) return (0, address(0), 0);
 
@@ -319,13 +308,9 @@ contract InsuranceAccount is IERC165, IERC1271, IAccount, MinimalReceiver {
     /**
      * @dev Executes a low-level call
      */
-    function _call(
-        address to,
-        uint256 value,
-        bytes calldata data
-    ) internal returns (bytes memory result) {
+    function _call(address to, uint256 value, bytes calldata data) internal returns (bytes memory result) {
         bool success;
-        (success, result) = to.call{value: value}(data);
+        (success, result) = to.call{ value: value }(data);
 
         if (!success) {
             assembly {

@@ -9,8 +9,6 @@ import { UUPSUpgradeable } from "openzeppelin-contracts-upgradeable/proxy/utils/
 import { BitMapsUpgradeable } from "openzeppelin-contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol";
 import { ERC721Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import { CountersUpgradeable } from "openzeppelin-contracts-upgradeable/utils/CountersUpgradeable.sol";
-import { IERC6551Registry } from "src/interfaces/IERC6551Registry.sol";
-import { ERC6551BytecodeLib } from "src/lib/ERC6551BytecodeLib.sol";
 import { ERC1155ReceiverUpgradeable } from
     "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC1155/utils/ERC1155ReceiverUpgradeable.sol";
 import { ERC721HolderUpgradeable } from
@@ -19,6 +17,8 @@ import { ERC1155HolderUpgradeable } from
     "openzeppelin-contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
 import { MerkleProofUpgradeable } from
     "openzeppelin-contracts-upgradeable/utils/cryptography/MerkleProofUpgradeable.sol";
+import {IAccountRegistry} from "src/interfaces/IAccountRegistry.sol";
+
 
 contract InsureaBag is
     ERC721Upgradeable,
@@ -33,9 +33,7 @@ contract InsureaBag is
     CountersUpgradeable.Counter public idTracker;
     string public baseURI;
 
-    address public implementationAddress;
-
-    IERC6551Registry public registry;
+    IAccountRegistry public registry;
 
     bool public insuranceStarted;
 
@@ -46,12 +44,8 @@ contract InsureaBag is
         _grantRole(DEFAULT_ADMIN_ROLE, _address);
     }
 
-    function setImplementationAddress(address _address) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        implementationAddress = _address;
-    }
-
     function setRegistryAddress(address _address) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        registry = IERC6551Registry(_address);
+        registry = IAccountRegistry(_address);
     }
 
     function initiateInsurance() external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -68,19 +62,17 @@ contract InsureaBag is
 
     function createInsurance() external payable {
         _mint(msg.sender, idTracker.current());
-        registry.createAccount(
-            implementationAddress, block.chainid, address(this), idTracker.current(), 0, "0x8129fc1c"
-        );
+        registry.createAccount(address(this), idTracker.current());
         idTracker.increment();
     }
 
     function getAddressOfInsurance(uint256 _tokenId) public view returns (address) {
-        address insAcc = registry.account(implementationAddress, block.chainid, address(this), _tokenId, 0);
+        address insAcc = registry.account(address(this), _tokenId);
         return insAcc;
     }
 
     function transferERC721token(address _tokenAddress, uint256 _insuranceId, uint256 _tokenId) external {
-        address insAcc = registry.account(implementationAddress, block.chainid, address(this), _insuranceId, 0);
+        address insAcc = registry.account(address(this), _insuranceId);
         address tokenOwner = IERC721Upgradeable(_tokenAddress).ownerOf(_tokenId);
         IERC721Upgradeable(_tokenAddress).safeTransferFrom(tokenOwner, insAcc, _tokenId);
     }

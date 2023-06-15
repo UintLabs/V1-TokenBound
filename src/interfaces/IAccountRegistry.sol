@@ -2,18 +2,9 @@
 pragma solidity ^0.8.19;
 
 interface IAccountRegistry {
-    event AccountCreated(
-        address account,
-        address indexed tokenContract,
-        uint256 indexed tokenId
-    );
+    event AccountCreated(address account, address indexed tokenContract, uint256 indexed tokenId);
 
-    function createAccount(address tokenContract, uint256 tokenId)
-        external
-        returns (address);
+    function createAccount(address tokenContract, uint256 tokenId) external returns (address);
 
-    function account(address tokenContract, uint256 tokenId)
-        external
-        view
-        returns (address);
+    function account(address tokenContract, uint256 tokenId) external view returns (address);
 }

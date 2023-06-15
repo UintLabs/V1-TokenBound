@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {IAccountRegistry} from "src/interfaces/IAccountRegistry.sol";
-import "./lib/MinimalProxyStore.sol";
-import "./Account.sol";
+import { IAccountRegistry } from "src/interfaces/IAccountRegistry.sol";
+import { MinimalProxyStore } from "src/lib/MinimalProxyStore.sol";
+import { InsuranceAccount } from "src/InsuranceAccount.sol";
 
 /**
  * @title A registry for token bound accounts
  * @dev Determines the address for each token bound account and performs deployment of accounts
  * @author Jayden Windle (jaydenwindle)
  */
-contract AccountRegistry is IRegistry {
+contract AccountRegistry is IAccountRegistry {
     /**
      * @dev Address of the account implementation
      */
@@ -28,11 +28,7 @@ contract AccountRegistry is IRegistry {
      * @param tokenId the token ID of the ERC721 token which will control the deployed account
      * @return The address of the deployed ccount
      */
-    function createAccount(
-        uint256 chainId,
-        address tokenCollection,
-        uint256 tokenId
-    ) external returns (address) {
+    function createAccount(uint256 chainId, address tokenCollection, uint256 tokenId) external returns (address) {
         return _createAccount(chainId, tokenCollection, tokenId);
     }
 
@@ -43,10 +39,7 @@ contract AccountRegistry is IRegistry {
      * @param tokenId the token ID of the ERC721 token which will control the deployed account
      * @return The address of the deployed account
      */
-    function createAccount(address tokenCollection, uint256 tokenId)
-        external
-        returns (address)
-    {
+    function createAccount(address tokenCollection, uint256 tokenId) external returns (address) {
         return _createAccount(block.chainid, tokenCollection, tokenId);
     }
 
@@ -59,11 +52,7 @@ contract AccountRegistry is IRegistry {
      * @param tokenId the tokenId of the ERC721 token that controls the account
      * @return The account address
      */
-    function account(
-        uint256 chainId,
-        address tokenCollection,
-        uint256 tokenId
-    ) external view returns (address) {
+    function account(uint256 chainId, address tokenCollection, uint256 tokenId) external view returns (address) {
         return _account(chainId, tokenCollection, tokenId);
     }
 
@@ -75,53 +64,25 @@ contract AccountRegistry is IRegistry {
      * @param tokenId the tokenId of the ERC721 token that controls the account
      * @return The account address
      */
-    function account(address tokenCollection, uint256 tokenId)
-        external
-        view
-        returns (address)
-    {
+    function account(address tokenCollection, uint256 tokenId) external view returns (address) {
         return _account(block.chainid, tokenCollection, tokenId);
     }
 
-    function _createAccount(
-        uint256 chainId,
-        address tokenCollection,
-        uint256 tokenId
-    ) internal returns (address) {
-        bytes memory encodedTokenData = abi.encode(
-            chainId,
-            tokenCollection,
-            tokenId
-        );
+    function _createAccount(uint256 chainId, address tokenCollection, uint256 tokenId) internal returns (address) {
+        bytes memory encodedTokenData = abi.encode(chainId, tokenCollection, tokenId);
         bytes32 salt = keccak256(encodedTokenData);
-        address accountProxy = MinimalProxyStore.cloneDeterministic(
-            implementation,
-            encodedTokenData,
-            salt
-        );
+        address accountProxy = MinimalProxyStore.cloneDeterministic(implementation, encodedTokenData, salt);
 
         emit AccountCreated(accountProxy, tokenCollection, tokenId);
 
         return accountProxy;
     }
 
-    function _account(
-        uint256 chainId,
-        address tokenCollection,
-        uint256 tokenId
-    ) internal view returns (address) {
-        bytes memory encodedTokenData = abi.encode(
-            chainId,
-            tokenCollection,
-            tokenId
-        );
+    function _account(uint256 chainId, address tokenCollection, uint256 tokenId) internal view returns (address) {
+        bytes memory encodedTokenData = abi.encode(chainId, tokenCollection, tokenId);
         bytes32 salt = keccak256(encodedTokenData);
 
-        address accountProxy = MinimalProxyStore.predictDeterministicAddress(
-            implementation,
-            encodedTokenData,
-            salt
-        );
+        address accountProxy = MinimalProxyStore.predictDeterministicAddress(implementation, encodedTokenData, salt);
 
         return accountProxy;
     }
