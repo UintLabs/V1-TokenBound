@@ -13,7 +13,6 @@ import { AccountGuardian } from "src/AccountGuardian.sol";
 import { EntryPoint } from "src/EntryPoint.sol";
 import { IABAccount } from "src/IABAccount.sol";
 
-
 contract InsureaBagTest is PRBTest, StdCheats {
     InsureaBag public nftContract;
     Proxy public proxy;
@@ -25,6 +24,7 @@ contract InsureaBagTest is PRBTest, StdCheats {
     ERC6551Registry public registry;
 
     address admin = address(1);
+    address public implementation;
 
     function setUp() public {
         //Set-up of InsureaBag implementation contract
@@ -37,8 +37,9 @@ contract InsureaBagTest is PRBTest, StdCheats {
         entrypoint = new EntryPoint();
 
         //Set-up of Account
-        IABAccount acc = new IABAccount(address(entrypoint), address(guardian));
-        accproxy = new AccountProxy(address(acc));
+        IABAccount acc = new IABAccount(address(guardian), address(entrypoint));
+        implementation = address(acc);
+        accproxy = new AccountProxy(address(implementation));
 
         //Set-up of ERC6551Registry
         registry = new ERC6551Registry();
@@ -47,12 +48,71 @@ contract InsureaBagTest is PRBTest, StdCheats {
         sampleNFT = new MockNFT();
     }
 
+    function testsetImplementationAddress_Success() public {
+        vm.prank(admin);
+        nftContract.setImplementationAddress(implementation);
+    }
+
+    function testsetImplementationAddress_Revert() public {
+        vm.prank(address(10));
+        vm.expectRevert();
+        nftContract.setImplementationAddress(address(implementation));
+    }
+
+    function testsetRegistryAddress_Success() public {
+        vm.prank(admin);
+        nftContract.setRegistryAddress(address(registry));
+    }
+
+    function testsetRegistryAddress_Revert() public {
+        vm.prank(address(10));
+        vm.expectRevert();
+        nftContract.setRegistryAddress(address(registry));
+    }
+
+    function testToggleInsurance_Success() public {
+        vm.prank(admin);
+        nftContract.toggleInsurance();
+        assertEq(nftContract.insuranceStarted(), true);
+    }
+
+    function testToggleInsurance_Revert() public {
+        vm.prank(address(10));
+        vm.expectRevert();
+        nftContract.toggleInsurance();
+    }
+
+    function testSetTokenURI_Success() public {
+        vm.prank(admin);
+        assertEq(nftContract.baseURI(), "");
+
+        vm.prank(admin);
+        nftContract.setBaseURI("https://Insureabag");
+        assertEq(nftContract.baseURI(), "https://Insureabag");
+
+        vm.prank(admin);
+        nftContract.setBaseURI("abc");
+        assertEq(nftContract.baseURI(), "abc");
+    }
+
+    function testSetTokenURI_Revert() public {
+        vm.prank(admin);
+        assertEq(nftContract.baseURI(), "");
+
+        vm.prank(address(10));
+        vm.expectRevert();
+        nftContract.setBaseURI("https://Insureabag");
+    }
+
     function testAccountCreation_Success() public {
         vm.prank(admin);
-        nftContract.setImplementationAddress(address(accproxy));
+        nftContract.setImplementationAddress(address(implementation));
 
         vm.prank(admin);
         nftContract.setRegistryAddress(address(registry));
+
+        vm.prank(admin);
+        nftContract.toggleInsurance();
 
         vm.prank(admin);
         nftContract.createInsurance();
@@ -65,145 +125,93 @@ contract InsureaBagTest is PRBTest, StdCheats {
 
     function testERC721TransferToBoundAddress_Success() public {
         vm.prank(admin);
-        nftContract.setImplementationAddress(address(accproxy));
+        nftContract.setImplementationAddress(address(implementation));
 
         vm.prank(admin);
         nftContract.setRegistryAddress(address(registry));
+
+        vm.prank(admin);
+        nftContract.toggleInsurance();
 
         vm.prank(address(10));
         nftContract.createInsurance();
         assertEq(nftContract.ownerOf(0), address(10));
 
-        address tokenAddress = registry.account(address(accproxy), block.chainid, address(nftContract), 0, 0);
-        assertEq(IABAccount(payable(tokenAddress)).owner(), address(nftContract));
+        vm.prank(address(10));
+        sampleNFT.safeMint(address(10), 0);
+        assertEq(sampleNFT.ownerOf(0), address(10));
+
+        address tokenAddress = registry.account(implementation, block.chainid, address(nftContract), 0, 0);
+        assertEq(IABAccount(payable(tokenAddress)).isAuthorized(address(10)), true);
+        assertEq(IABAccount(payable(tokenAddress)).owner(), address(10));
+
+        vm.prank(address(10));
+        sampleNFT.safeTransferFrom(address(10), tokenAddress, 0);
+        assertEq(sampleNFT.ownerOf(0), tokenAddress);
     }
 
-    // function testERC721ToTokenBoundAddress() public {
-    //     vm.prank(admin);
-    //     nftContract.setRegistryAddress(address(registry));
+    function testERC721TransferFromBoundAddress_Success() public {
+        vm.prank(admin);
+        nftContract.setImplementationAddress(address(implementation));
 
-    //     address tokenAddress = registry.account(address(nftContract), 0);
+        vm.prank(admin);
+        nftContract.setRegistryAddress(address(registry));
 
-    //     vm.prank(address(10));
-    //     nftContract.createInsurance();
-    //     assertEq(nftContract.ownerOf(0), address(10));
-    //     assertEq(InsuranceAccount(payable(tokenAddress)).owner(), address(10));
+        vm.prank(admin);
+        nftContract.toggleInsurance();
 
-    //     vm.prank(address(10));
-    //     InsuranceAccount(payable(tokenAddress)).addSupportedCollection(address(sampleNFT));
+        vm.prank(address(10));
+        nftContract.createInsurance();
+        assertEq(nftContract.ownerOf(0), address(10));
 
-    //     vm.prank(address(20));
-    //     sampleNFT.safeMint(address(20), 1);
-    //     assertEq(sampleNFT.ownerOf(1), address(20));
+        vm.prank(address(10));
+        sampleNFT.safeMint(address(10), 0);
+        assertEq(sampleNFT.ownerOf(0), address(10));
 
-    //     vm.prank(address(20));
-    //     sampleNFT.safeTransferFrom(address(20), tokenAddress, 1);
-    //     assertEq(sampleNFT.ownerOf(1), tokenAddress);
-    // }
+        address tokenAddress = registry.account(implementation, block.chainid, address(nftContract), 0, 0);
+        assertEq(IABAccount(payable(tokenAddress)).isAuthorized(address(10)), true);
+        assertEq(IABAccount(payable(tokenAddress)).owner(), address(10));
 
-    // function testERC721FromTokenBoundAddress() public {
-    //     vm.prank(admin);
-    //     nftContract.setRegistryAddress(address(registry));
+        vm.prank(address(10));
+        sampleNFT.safeTransferFrom(address(10), tokenAddress, 0);
+        assertEq(sampleNFT.ownerOf(0), tokenAddress);
 
-    //     address tokenAddress = registry.account(address(nftContract), 0);
+        vm.prank(tokenAddress);
+        sampleNFT.safeTransferFrom(tokenAddress, address(20), 0);
+        assertEq(sampleNFT.ownerOf(0), address(20));
+    }
 
-    //     vm.prank(address(10));
-    //     nftContract.createInsurance();
-    //     assertEq(nftContract.ownerOf(0), address(10));
-    //     assertEq(InsuranceAccount(payable(tokenAddress)).owner(), address(10));
+    function testInsuranceMintScenario_Success() public {
+        vm.prank(admin);
+        nftContract.setImplementationAddress(address(implementation));
 
-    //     vm.prank(address(10));
-    //     InsuranceAccount(payable(tokenAddress)).addSupportedCollection(address(sampleNFT));
+        vm.prank(admin);
+        nftContract.setRegistryAddress(address(registry));
 
-    //     vm.prank(address(20));
-    //     sampleNFT.safeMint(address(20), 1);
-    //     assertEq(sampleNFT.ownerOf(1), address(20));
+        vm.prank(admin);
+        nftContract.toggleInsurance();
 
-    //     vm.prank(address(20));
-    //     sampleNFT.safeTransferFrom(address(20), tokenAddress, 1);
-    //     assertEq(sampleNFT.ownerOf(1), tokenAddress);
+        address[] memory users = new address[](10001);
+        for (uint256 i = 0; i < 10_001; i++) {
+            bytes memory byteIndex = abi.encodePacked(i);
+            string memory addressLabel = string.concat("user", string(byteIndex));
 
-    //     vm.prank(tokenAddress);
-    //     sampleNFT.safeTransferFrom(tokenAddress, address(20), 1);
-    //     assertEq(sampleNFT.ownerOf(1), address(20));
-    // }
+            address user = makeAddr(addressLabel);
+            vm.deal(user, 10 ether);
+            users[i] = user;
+        }
 
-    // function test_ERC721TransferThroughInsureABag() public {
-    //     vm.prank(admin);
-    //     nftContract.setRegistryAddress(address(registry));
+        for (uint256 i = 0; i < 10_001; i++) {
+            vm.prank(users[i], users[i]);
+            nftContract.createInsurance();
+            assertEq(nftContract.ownerOf(i), users[i]);
+        }
 
-    //     address tokenAddress = registry.account(address(nftContract), 0);
-
-    //     vm.prank(address(10));
-    //     nftContract.createInsurance();
-
-    //     vm.prank(address(10));
-    //     sampleNFT.safeMint(address(10), 1);
-    //     assertEq(sampleNFT.ownerOf(1), address(10));
-
-    //     vm.prank(address(10));
-    //     sampleNFT.approve(address(nftContract), 1);
-
-    //     vm.prank(address(nftContract));
-    //     nftContract.transferERC721token(address(sampleNFT), 0, 1);
-    //     assertEq(sampleNFT.ownerOf(1), tokenAddress);
-    // }
-
-    // function testERC721tokenTransferDirectlyThroughNFTContractShouldBeSuccessfull() public {
-    //     vm.prank(admin);
-    //     nftContract.setRegistryAddress(address(registry));
-
-    //     address tokenAddress = registry.account(address(nftContract), 0);
-
-    //     vm.prank(address(10));
-    //     nftContract.createInsurance();
-
-    //     vm.prank(address(10));
-    //     sampleNFT.safeMint(address(10), 1);
-    //     assertEq(sampleNFT.ownerOf(1), address(10));
-
-    //     vm.prank(address(10));
-    //     sampleNFT.safeTransferFrom(address(10), tokenAddress, 1);
-    //     assertEq(sampleNFT.ownerOf(1), tokenAddress);
-    // }
-
-    // function testCheckAddressThatIsOwnerOfTokenBoundAccount() public {
-    //     vm.prank(admin);
-    //     nftContract.setRegistryAddress(address(registry));
-
-    //     vm.prank(address(10));
-    //     nftContract.createInsurance();
-    // }
-
-    // function testERC721tokenTransferThroughContract() public {
-    //     vm.prank(admin);
-    //     nftContract.setRegistryAddress(address(registry));
-
-    //     address tokenAddress = registry.account(block.chainid, address(nftContract), 0);
-
-    //     vm.prank(address(10));
-    //     sampleNFT.safeMint(address(10), 1);
-    //     assertEq(sampleNFT.ownerOf(1), address(10));
-
-    //     vm.prank(address(10));
-    //     sampleNFT.safeTransferFrom(address(10), tokenAddress, 1);
-    //     assertEq(sampleNFT.ownerOf(1), nftContract.getAddressOfInsurance(0));
-    // }
-
-    // function testERC721tokenTransferToTokenBoundAddressDirectly() public {
-    //     nftContract.setImplementationAddress(address(implementation));
-    //     nftContract.setRegistryAddress(address(registry));
-
-    //     vm.prank(address(10));
-    //     nftContract.createInsurance();
-    //     assertEq(nftContract.ownerOf(0), address(10));
-
-    //     vm.prank(address(10));
-    //     sampleNFT.safeMint(address(10), 1);
-    //     assertEq(sampleNFT.ownerOf(1), address(10));
-
-    //     vm.prank(address(10));
-    //     sampleNFT.transferFrom(address(10), nftContract.getAddressOfInsurance(0), 1);
-    //     assertEq(sampleNFT.ownerOf(1), nftContract.getAddressOfInsurance(0));
-    // }
+        for (uint256 i = 0; i < 10_001; i++) {
+            vm.prank(users[i], users[i]);
+            address tokenAddress = registry.account(implementation, block.chainid, address(nftContract), i, 0);
+            assertEq(IABAccount(payable(tokenAddress)).owner(), address(users[i]));
+            assertEq(IABAccount(payable(tokenAddress)).isAuthorized(address(users[i])), true);
+        }
+    }
 }

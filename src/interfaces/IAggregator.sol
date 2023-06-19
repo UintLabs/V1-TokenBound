@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.19;
 
-import {UserOperations} from "src/utils/UserOperations.sol";
+import { UserOperations } from "src/utils/UserOperations.sol";
 
 /**
  * Aggregated Signatures validator.
@@ -22,7 +22,10 @@ interface IAggregator {
      * @return sigForUserOp the value to put into the signature field of the userOp when calling handleOps.
      *    (usually empty, unless account and aggregator support some kind of "multisig"
      */
-    function validateUserOpSignature(UserOperations calldata userOp) external view returns (bytes memory sigForUserOp);
+    function validateUserOpSignature(UserOperations calldata userOp)
+        external
+        view
+        returns (bytes memory sigForUserOp);
 
     /**
      * aggregate multiple signatures into a single value.
