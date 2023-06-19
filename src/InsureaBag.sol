@@ -2,7 +2,7 @@
 pragma solidity >=0.8.19;
 
 import { IERC721Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
-import { IAccountRegistry } from "src/interfaces/IAccountRegistry.sol";
+import { IERC6551Registry } from "src/interfaces/IERC6551Registry.sol";
 import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "openzeppelin-contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -15,9 +15,11 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
     using CountersUpgradeable for CountersUpgradeable.Counter;
 
     CountersUpgradeable.Counter public idTracker;
+
     string public baseURI;
 
-    IAccountRegistry public registry;
+    IERC6551Registry registry;
+    address accountImplementation;
 
     bool public insuranceStarted;
 
@@ -29,7 +31,11 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
     }
 
     function setRegistryAddress(address _address) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        registry = IAccountRegistry(_address);
+        registry = IERC6551Registry(_address);
+    }
+
+    function setImplementationAddress(address _address) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        accountImplementation = _address;
     }
 
     function toggleInsurance() external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -42,14 +48,10 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
 
     function createInsurance() external payable {
         _mint(msg.sender, idTracker.current());
-        registry.createAccount(address(this), idTracker.current());
+        registry.createAccount(
+            accountImplementation, block.chainid, address(this), idTracker.current(), 0, "0x8129fc1c"
+        );
         idTracker.increment();
-    }
-
-    function transferERC721token(address _tokenAddress, uint256 _insuranceId, uint256 _tokenId) external {
-        address insAcc = registry.account(address(this), _insuranceId);
-        address tokenOwner = IERC721Upgradeable(_tokenAddress).ownerOf(_tokenId);
-        IERC721Upgradeable(_tokenAddress).safeTransferFrom(tokenOwner, insAcc, _tokenId);
     }
 
     function supportsInterface(bytes4 interfaceId)
