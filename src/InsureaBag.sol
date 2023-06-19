@@ -1,32 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.19;
 
-import { IERC1155Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
 import { IERC721Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import { IAccountRegistry } from "src/interfaces/IAccountRegistry.sol";
 import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "openzeppelin-contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { BitMapsUpgradeable } from "openzeppelin-contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol";
 import { ERC721Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import { CountersUpgradeable } from "openzeppelin-contracts-upgradeable/utils/CountersUpgradeable.sol";
-import { ERC1155ReceiverUpgradeable } from
-    "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC1155/utils/ERC1155ReceiverUpgradeable.sol";
-import { ERC721HolderUpgradeable } from
-    "openzeppelin-contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
-import { ERC1155HolderUpgradeable } from
-    "openzeppelin-contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
-import { MerkleProofUpgradeable } from
-    "openzeppelin-contracts-upgradeable/utils/cryptography/MerkleProofUpgradeable.sol";
-import {IAccountRegistry} from "src/interfaces/IAccountRegistry.sol";
 
-
-contract InsureaBag is
-    ERC721Upgradeable,
-    AccessControlUpgradeable,
-    ReentrancyGuardUpgradeable,
-    ERC1155HolderUpgradeable,
-    ERC721HolderUpgradeable
-{
+contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable {
     using BitMapsUpgradeable for BitMapsUpgradeable.BitMap;
     using CountersUpgradeable for CountersUpgradeable.Counter;
 
@@ -48,12 +32,8 @@ contract InsureaBag is
         registry = IAccountRegistry(_address);
     }
 
-    function initiateInsurance() external onlyRole(DEFAULT_ADMIN_ROLE) {
-        insuranceStarted = true;
-    }
-
-    function stopInsuranceProcess() external onlyRole(DEFAULT_ADMIN_ROLE) {
-        insuranceStarted = false;
+    function toggleInsurance() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        insuranceStarted = !insuranceStarted;
     }
 
     function setBaseURI(string memory _baseURI) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -66,11 +46,6 @@ contract InsureaBag is
         idTracker.increment();
     }
 
-    function getAddressOfInsurance(uint256 _tokenId) public view returns (address) {
-        address insAcc = registry.account(address(this), _tokenId);
-        return insAcc;
-    }
-
     function transferERC721token(address _tokenAddress, uint256 _insuranceId, uint256 _tokenId) external {
         address insAcc = registry.account(address(this), _insuranceId);
         address tokenOwner = IERC721Upgradeable(_tokenAddress).ownerOf(_tokenId);
@@ -81,7 +56,7 @@ contract InsureaBag is
         public
         view
         virtual
-        override(AccessControlUpgradeable, ERC1155ReceiverUpgradeable, ERC721Upgradeable)
+        override(AccessControlUpgradeable, ERC721Upgradeable)
         returns (bool)
     {
         return

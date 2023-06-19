@@ -4,22 +4,17 @@ pragma solidity ^0.8.19;
 import { IERC721 } from "openzeppelin-contracts/token/ERC721/IERC721.sol";
 import { IERC1271 } from "openzeppelin-contracts/interfaces/IERC1271.sol";
 import { SignatureChecker } from "openzeppelin-contracts/utils/cryptography/SignatureChecker.sol";
-
 import { IERC165 } from "openzeppelin-contracts/utils/introspection/IERC165.sol";
-import { IERC1155Receiver } from "openzeppelin-contracts/token/ERC1155/IERC1155Receiver.sol";
-import { ERC1155Receiver } from "openzeppelin-contracts/token/ERC1155/utils/ERC1155Receiver.sol";
-
-
 import { CrossChainExecutorList } from "src/CrossChainExecutorList.sol";
-import { MinimalReceiver } from "src/MinimalReceiver.sol";
 import { IInsuranceAccount } from "src/interfaces/IInsuranceAccount.sol";
 import { MinimalProxyStore } from "src/lib/MinimalProxyStore.sol";
+import { ERC721Holder } from "openzeppelin-contracts/token/ERC721/utils/ERC721Holder.sol";
 
 /**
  * @title A smart contract wallet owned by a single ERC721 token
  * @author Jayden Windle (jaydenwindle)
  */
-contract InsuranceAccount is IERC165, IERC1271, IInsuranceAccount, MinimalReceiver {
+contract InsuranceAccount is IERC165, IERC1271, IInsuranceAccount, ERC721Holder {
     error NotAuthorized();
     error AccountLocked();
     error ExceedsMaxLockTime();
@@ -36,6 +31,8 @@ contract InsuranceAccount is IERC165, IERC1271, IInsuranceAccount, MinimalReceiv
      */
     mapping(address => address) public executor;
 
+    mapping(address => bool) public allowedTokenCollections;
+
     /**
      * @dev Emitted whenever the lock status of a account is updated
      */
@@ -45,6 +42,8 @@ contract InsuranceAccount is IERC165, IERC1271, IInsuranceAccount, MinimalReceiv
      * @dev Emitted whenever the executor for a account is updated
      */
     event ExecutorUpdated(address owner, address executor);
+
+    receive() external payable virtual { }
 
     constructor(address _crossChainExecutorList) {
         crossChainExecutorList = CrossChainExecutorList(_crossChainExecutorList);
@@ -244,18 +243,8 @@ contract InsuranceAccount is IERC165, IERC1271, IInsuranceAccount, MinimalReceiv
      * @param interfaceId the interfaceId to check support for
      * @return true if the interface is supported, false otherwise
      */
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(IERC165, ERC1155Receiver)
-        returns (bool)
-    {
-        // default interface support
-        if (
-            interfaceId == type(IInsuranceAccount).interfaceId || interfaceId == type(IERC1155Receiver).interfaceId
-                || interfaceId == type(IERC165).interfaceId
-        ) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165) returns (bool) {
+        if (interfaceId == type(IInsuranceAccount).interfaceId || interfaceId == type(IERC165).interfaceId) {
             return true;
         }
 
@@ -317,5 +306,15 @@ contract InsuranceAccount is IERC165, IERC1271, IInsuranceAccount, MinimalReceiv
                 revert(add(result, 32), mload(result))
             }
         }
+    }
+
+    function onERC721Received(address, address, uint256, bytes memory) public virtual override returns (bytes4) {
+        require(allowedTokenCollections[msg.sender], "Token collection not allowed");
+        return this.onERC721Received.selector;
+    }
+
+    function addSupportedCollection(address _tokenCollection) external {
+        require(msg.sender == owner());
+        allowedTokenCollections[_tokenCollection] = true;
     }
 }
