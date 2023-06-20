@@ -72,33 +72,38 @@ contract InsureaBagTest is PRBTest, StdCheats {
 
     function testToggleInsurance_Success() public {
         vm.prank(admin);
-        nftContract.toggleInsurance();
-        assertEq(nftContract.insuranceStarted(), true);
+        nftContract.toggleMint();
+        assertEq(nftContract.initiatedMint(), true);
     }
 
     function testToggleInsurance_Revert() public {
         vm.prank(address(10));
         vm.expectRevert();
-        nftContract.toggleInsurance();
+        nftContract.toggleMint();
     }
 
     function testSetTokenURI_Success() public {
         vm.prank(admin);
-        assertEq(nftContract.baseURI(), "");
-
-        vm.prank(admin);
         nftContract.setBaseURI("https://Insureabag");
-        assertEq(nftContract.baseURI(), "https://Insureabag");
 
         vm.prank(admin);
-        nftContract.setBaseURI("abc");
-        assertEq(nftContract.baseURI(), "abc");
+        nftContract.setImplementationAddress(address(implementation));
+
+        vm.prank(admin);
+        nftContract.setRegistryAddress(address(registry));
+
+        vm.prank(admin);
+        nftContract.toggleMint();
+
+        vm.prank(admin);
+        nftContract.createInsurance();
+        assertEq(nftContract.ownerOf(0), admin);
+
+        vm.prank(admin);
+        assertEq(nftContract.tokenURI(0), "https://Insureabag");
     }
 
     function testSetTokenURI_Revert() public {
-        vm.prank(admin);
-        assertEq(nftContract.baseURI(), "");
-
         vm.prank(address(10));
         vm.expectRevert();
         nftContract.setBaseURI("https://Insureabag");
@@ -112,7 +117,7 @@ contract InsureaBagTest is PRBTest, StdCheats {
         nftContract.setRegistryAddress(address(registry));
 
         vm.prank(admin);
-        nftContract.toggleInsurance();
+        nftContract.toggleMint();
 
         vm.prank(admin);
         nftContract.createInsurance();
@@ -131,7 +136,7 @@ contract InsureaBagTest is PRBTest, StdCheats {
         nftContract.setRegistryAddress(address(registry));
 
         vm.prank(admin);
-        nftContract.toggleInsurance();
+        nftContract.toggleMint();
 
         vm.prank(address(10));
         nftContract.createInsurance();
@@ -158,7 +163,7 @@ contract InsureaBagTest is PRBTest, StdCheats {
         nftContract.setRegistryAddress(address(registry));
 
         vm.prank(admin);
-        nftContract.toggleInsurance();
+        nftContract.toggleMint();
 
         vm.prank(address(10));
         nftContract.createInsurance();
@@ -189,7 +194,7 @@ contract InsureaBagTest is PRBTest, StdCheats {
         nftContract.setRegistryAddress(address(registry));
 
         vm.prank(admin);
-        nftContract.toggleInsurance();
+        nftContract.toggleMint();
 
         address[] memory users = new address[](10001);
         for (uint256 i = 0; i < 10_001; i++) {

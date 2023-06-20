@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.19;
+pragma solidity ^0.8.19;
 
 import { IERC721Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import { IERC6551Registry } from "src/interfaces/IERC6551Registry.sol";
@@ -9,22 +9,29 @@ import { UUPSUpgradeable } from "openzeppelin-contracts-upgradeable/proxy/utils/
 import { ERC721Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import { CountersUpgradeable } from "openzeppelin-contracts-upgradeable/utils/CountersUpgradeable.sol";
 
-error NonexistentToken();
-error InsuranceNotStarted();
-
 contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable {
     using CountersUpgradeable for CountersUpgradeable.Counter;
 
-    CountersUpgradeable.Counter public idTracker;
+    /*//////////////////////////////////////////////////////////////
+                                 Errors
+    //////////////////////////////////////////////////////////////*/
 
-    string public baseURI;
+    error NonexistentToken();
+    error InsuranceNotStarted();
+    error ZeroAddress();
+    error InsuranceNotInitiated();
 
+    /*//////////////////////////////////////////////////////////////
+                                 State Vars
+    //////////////////////////////////////////////////////////////*/
+
+    CountersUpgradeable.Counter idTracker;
     IERC6551Registry registry;
+
+    string baseURI;
     address accountImplementation;
+    bool public initiatedMint;
 
-    bool public insuranceStarted;
-
-    event SafeCreated(address to, uint256 tokenId);
 
     function initialize(string memory _name, string memory _symbol, address _address) external initializer {
         __ERC721_init(_name, _symbol);
@@ -33,41 +40,74 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
         _grantRole(DEFAULT_ADMIN_ROLE, _address);
     }
 
-    //MANAGEMENT FUNCTIONS
+    /*//////////////////////////////////////////////////////////////
+                                 Modifiers
+    //////////////////////////////////////////////////////////////*/
 
-    function setRegistryAddress(address _address) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    modifier notZeroAddress( address _address) {
+        if (_address == address(0)) revert ZeroAddress();
+        _;
+    }
+
+    modifier mintInitiated() {
+        if (initiatedMint == false) revert InsuranceNotInitiated();
+        _;
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                         Management Functions
+    //////////////////////////////////////////////////////////////*/
+
+    function setRegistryAddress(address _address) external onlyRole(DEFAULT_ADMIN_ROLE) notZeroAddress(_address) {
         registry = IERC6551Registry(_address);
     }
 
-    function setImplementationAddress(address _address) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setImplementationAddress(address _address)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        notZeroAddress(_address)
+    {
+        if (_address == address(0)) revert ZeroAddress();
         accountImplementation = _address;
     }
 
-    function toggleInsurance() external onlyRole(DEFAULT_ADMIN_ROLE) {
-        insuranceStarted = !insuranceStarted;
+    function toggleMint() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        initiatedMint = !initiatedMint;
     }
 
     function setBaseURI(string memory _baseURI) external onlyRole(DEFAULT_ADMIN_ROLE) {
         baseURI = _baseURI;
     }
 
-    //MINT FUNCTION
+    /*//////////////////////////////////////////////////////////////
+                           Mint Function
+    //////////////////////////////////////////////////////////////*/
 
-    function createInsurance() external payable {
-        if (!insuranceStarted) revert InsuranceNotStarted();
+    function createInsurance() external payable mintInitiated {
         _mint(msg.sender, idTracker.current());
         registry.createAccount(
-            accountImplementation, block.chainid, address(this), idTracker.current(), 0, "0x8129fc1c"
-        );
-        emit SafeCreated(msg.sender, idTracker.current());
+            accountImplementation, block.chainid, address(this), idTracker.current(), 0, "0x8129fc1c");
         idTracker.increment();
     }
+
+    /*//////////////////////////////////////////////////////////////
+                              Other
+    //////////////////////////////////////////////////////////////*/
 
     function getTokenBoundAddress(uint256 _tokenId) external view returns (address) {
         if (_tokenId > idTracker.current()) revert NonexistentToken();
         address account = registry.account(accountImplementation, block.chainid, address(this), _tokenId, 0);
         return account;
     }
+
+    function tokenURI(uint256 _tokenId) public view override returns (string memory) {
+        _requireMinted(_tokenId);
+        return baseURI;
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        Supports Interface
+    //////////////////////////////////////////////////////////////*/
 
     function supportsInterface(bytes4 interfaceId)
         public
