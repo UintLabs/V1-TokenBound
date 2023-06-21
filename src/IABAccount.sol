@@ -5,7 +5,6 @@ pragma solidity ^0.8.19;
 
 import { IERC6551Account } from "src/interfaces/IERC6551Account.sol";
 import { ERC6551AccountLib } from "src/lib/ERC6551AccountLib.sol";
-
 import { ECDSA } from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
 import { IERC165 } from "openzeppelin-contracts/utils/introspection/IERC165.sol";
 import { IERC721 } from "openzeppelin-contracts/token/ERC721/IERC721.sol";
@@ -14,9 +13,7 @@ import { IERC1155Receiver } from "openzeppelin-contracts/token/ERC1155/IERC1155R
 import { IERC1271 } from "openzeppelin-contracts/interfaces/IERC1271.sol";
 import { SignatureChecker } from "openzeppelin-contracts/utils/cryptography/SignatureChecker.sol";
 import { UUPSUpgradeable } from "openzeppelin-contracts/proxy/utils/UUPSUpgradeable.sol";
-
 import { BaseAccount as BaseERC4337Account, IEntryPoint, UserOperation } from "account-abstraction/core/BaseAccount.sol";
-
 import { IAccountGuardian } from "src/interfaces/IAccountGuardian.sol";
 
 error NotAuthorized();
@@ -83,7 +80,6 @@ contract IABAccount is
         if (_guardian == address(0) || entryPoint_ == address(0)) {
             revert InvalidInput();
         }
-
         _entryPoint = entryPoint_;
         guardian = _guardian;
     }
@@ -263,6 +259,9 @@ contract IABAccount is
         override
         returns (bytes4)
     {
+        address collection = msg.sender;
+        require(IAccountGuardian(guardian).isTrustedERC721(collection), "Not Supported ER721");
+
         _handleOverrideStatic();
 
         (uint256 chainId, address tokenContract, uint256 tokenId) = ERC6551AccountLib.token();
@@ -287,6 +286,9 @@ contract IABAccount is
         override
         returns (bytes4)
     {
+        address collection = msg.sender;
+        require(IAccountGuardian(guardian).isTrustedERC1155(collection), "Not Supported ERC1155");
+
         _handleOverrideStatic();
 
         return this.onERC1155Received.selector;
@@ -305,6 +307,9 @@ contract IABAccount is
         override
         returns (bytes4)
     {
+        address collection = msg.sender;
+        require(IAccountGuardian(guardian).isTrustedERC1155(collection), "Not Supported ERC1155");
+
         _handleOverrideStatic();
 
         return this.onERC1155BatchReceived.selector;

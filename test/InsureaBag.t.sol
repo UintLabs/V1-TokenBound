@@ -23,33 +23,42 @@ contract InsureaBagTest is PRBTest, StdCheats {
     MockNFT public sampleNFT;
     ERC6551Registry public registry;
 
-    address admin = address(1);
     address public implementation;
+    address public deployer;
+    uint256 public deployerPkey;
 
     function setUp() public {
+        //Create deployer address and private key
+        (deployer, deployerPkey) = makeAddrAndKey("deployer");
+
         //Set-up of InsureaBag implementation contract
+        vm.prank(deployer);
         InsureaBag iab = new InsureaBag();
-        proxy = new Proxy(address(iab),abi.encodeWithSelector(iab.initialize.selector, "InsureaBag", "IAB", admin));
+        proxy = new Proxy(address(iab),abi.encodeWithSelector(iab.initialize.selector, "InsureaBag", "IAB", deployer));
         nftContract = InsureaBag(address(proxy));
 
         //Set-up of EntryPoint and Guardian
+        vm.prank(deployer);
         guardian = new AccountGuardian();
         entrypoint = new EntryPoint();
 
         //Set-up of Account
+        vm.prank(deployer);
         IABAccount acc = new IABAccount(address(guardian), address(entrypoint));
         implementation = address(acc);
         accproxy = new AccountProxy(address(implementation));
 
         //Set-up of ERC6551Registry
+        vm.prank(deployer);
         registry = new ERC6551Registry();
 
         //Set-up of MockNFT();
+        vm.prank(deployer);
         sampleNFT = new MockNFT();
     }
 
     function testsetImplementationAddress_Success() public {
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.setImplementationAddress(implementation);
     }
 
@@ -60,7 +69,7 @@ contract InsureaBagTest is PRBTest, StdCheats {
     }
 
     function testsetRegistryAddress_Success() public {
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.setRegistryAddress(address(registry));
     }
 
@@ -71,7 +80,7 @@ contract InsureaBagTest is PRBTest, StdCheats {
     }
 
     function testToggleInsurance_Success() public {
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.toggleMint();
         assertEq(nftContract.initiatedMint(), true);
     }
@@ -83,23 +92,23 @@ contract InsureaBagTest is PRBTest, StdCheats {
     }
 
     function testSetTokenURI_Success() public {
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.setBaseURI("https://Insureabag");
 
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.setImplementationAddress(address(implementation));
 
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.setRegistryAddress(address(registry));
 
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.toggleMint();
 
-        vm.prank(admin);
+        vm.prank(address(10));
         nftContract.createInsurance();
-        assertEq(nftContract.ownerOf(0), admin);
+        assertEq(nftContract.ownerOf(0), address(10));
 
-        vm.prank(admin);
+        vm.prank(address(10));
         assertEq(nftContract.tokenURI(0), "https://Insureabag");
     }
 
@@ -110,18 +119,18 @@ contract InsureaBagTest is PRBTest, StdCheats {
     }
 
     function testAccountCreation_Success() public {
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.setImplementationAddress(address(implementation));
 
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.setRegistryAddress(address(registry));
 
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.toggleMint();
 
-        vm.prank(admin);
+        vm.prank(address(20));
         nftContract.createInsurance();
-        assertEq(nftContract.ownerOf(0), admin);
+        assertEq(nftContract.ownerOf(0), address(20));
 
         vm.prank(address(10));
         nftContract.createInsurance();
@@ -129,13 +138,13 @@ contract InsureaBagTest is PRBTest, StdCheats {
     }
 
     function testERC721TransferToBoundAddress_Success() public {
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.setImplementationAddress(address(implementation));
 
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.setRegistryAddress(address(registry));
 
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.toggleMint();
 
         vm.prank(address(10));
@@ -145,6 +154,9 @@ contract InsureaBagTest is PRBTest, StdCheats {
         vm.prank(address(10));
         sampleNFT.safeMint(address(10), 0);
         assertEq(sampleNFT.ownerOf(0), address(10));
+
+        vm.prank(deployer);
+        guardian.setTrustedERC721(address(sampleNFT), true);
 
         address tokenAddress = registry.account(implementation, block.chainid, address(nftContract), 0, 0);
         assertEq(IABAccount(payable(tokenAddress)).isAuthorized(address(10)), true);
@@ -156,13 +168,13 @@ contract InsureaBagTest is PRBTest, StdCheats {
     }
 
     function testERC721TransferFromBoundAddress_Success() public {
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.setImplementationAddress(address(implementation));
 
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.setRegistryAddress(address(registry));
 
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.toggleMint();
 
         vm.prank(address(10));
@@ -172,6 +184,9 @@ contract InsureaBagTest is PRBTest, StdCheats {
         vm.prank(address(10));
         sampleNFT.safeMint(address(10), 0);
         assertEq(sampleNFT.ownerOf(0), address(10));
+
+        vm.prank(deployer);
+        guardian.setTrustedERC721(address(sampleNFT), true);
 
         address tokenAddress = registry.account(implementation, block.chainid, address(nftContract), 0, 0);
         assertEq(IABAccount(payable(tokenAddress)).isAuthorized(address(10)), true);
@@ -187,13 +202,13 @@ contract InsureaBagTest is PRBTest, StdCheats {
     }
 
     function testInsuranceMintScenario_Success() public {
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.setImplementationAddress(address(implementation));
 
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.setRegistryAddress(address(registry));
 
-        vm.prank(admin);
+        vm.prank(deployer);
         nftContract.toggleMint();
 
         address[] memory users = new address[](10001);

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import { IERC721Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import { IERC6551Registry } from "src/interfaces/IERC6551Registry.sol";
 import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -32,7 +31,6 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
     address accountImplementation;
     bool public initiatedMint;
 
-
     function initialize(string memory _name, string memory _symbol, address _address) external initializer {
         __ERC721_init(_name, _symbol);
         __AccessControl_init();
@@ -44,7 +42,7 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
                                  Modifiers
     //////////////////////////////////////////////////////////////*/
 
-    modifier notZeroAddress( address _address) {
+    modifier notZeroAddress(address _address) {
         if (_address == address(0)) revert ZeroAddress();
         _;
     }
@@ -86,7 +84,8 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
     function createInsurance() external payable mintInitiated {
         _mint(msg.sender, idTracker.current());
         registry.createAccount(
-            accountImplementation, block.chainid, address(this), idTracker.current(), 0, "0x8129fc1c");
+            accountImplementation, block.chainid, address(this), idTracker.current(), 0, "0x8129fc1c"
+        );
         idTracker.increment();
     }
 
