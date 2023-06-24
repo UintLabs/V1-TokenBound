@@ -15,6 +15,7 @@ import { SignatureChecker } from "openzeppelin-contracts/utils/cryptography/Sign
 import { UUPSUpgradeable } from "openzeppelin-contracts/proxy/utils/UUPSUpgradeable.sol";
 import { BaseAccount as BaseERC4337Account, IEntryPoint, UserOperation } from "account-abstraction/core/BaseAccount.sol";
 import { IAccountGuardian } from "src/interfaces/IAccountGuardian.sol";
+// import {GuardianMultiSigWallet} from "./GuardianMultiSigWallet.sol";
 
 error NotAuthorized();
 error InvalidInput();
@@ -33,6 +34,7 @@ contract IABAccount is
     IERC721Receiver,
     IERC1155Receiver,
     UUPSUpgradeable,
+    
     BaseERC4337Account
 {
     using ECDSA for bytes32;
@@ -170,13 +172,13 @@ contract IABAccount is
     function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4 magicValue) {
         _handleOverrideStatic();
 
-        bool isValid = SignatureChecker.isValidSignatureNow(owner(), hash, signature);
-
-        if (isValid) {
+        try IAccountGuardian(guardian).checkNSignatures(hash, signature, 2){
             return IERC1271.isValidSignature.selector;
+        }catch {
+            return "";
         }
-
-        return "";
+        
+        
     }
 
     /// @dev Returns the EIP-155 chain ID, token contract address, and token ID for the token that
