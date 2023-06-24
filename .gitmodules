@@ -18,3 +18,6 @@
 [submodule "lib/sstore2"]
 	path = lib/sstore2
 	url = https://github.com/0xsequence/sstore2
+[submodule "lib/soul-wallet-contract"]
+	path = lib/soul-wallet-contract
+	url = https://github.com/proofofsoulprotocol/soul-wallet-contract
