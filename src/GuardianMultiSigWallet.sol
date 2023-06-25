@@ -5,18 +5,14 @@ pragma solidity ^0.8.12;
 /* solhint-disable no-inline-assembly */
 /* solhint-disable reason-string */
 
-import {ECDSA} from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
-import {Initializable} from "openzeppelin-contracts-upgradeable/proxy/utils/Initializable.sol";
-import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {IERC1271Upgradeable} from "openzeppelin-contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
+import { ECDSA } from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
+import { Initializable } from "openzeppelin-contracts-upgradeable/proxy/utils/Initializable.sol";
+import { UUPSUpgradeable } from "openzeppelin-contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { IERC1271Upgradeable } from "openzeppelin-contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
 
 /*
  */
-contract GuardianMultiSigWallet is
-    Initializable,
-    UUPSUpgradeable,
-    IERC1271Upgradeable
-{
+contract GuardianMultiSigWallet is Initializable, UUPSUpgradeable, IERC1271Upgradeable {
     using ECDSA for bytes32;
 
     mapping(address => bool) internal isGuardian;
@@ -27,10 +23,7 @@ contract GuardianMultiSigWallet is
         // solhint-disable-previous-line no-empty-blocks
     }
 
-    function initialize(address[] calldata _guardians, uint16 _threshold)
-        public
-        initializer
-    {
+    function initialize(address[] calldata _guardians, uint16 _threshold) public initializer {
         // only set guardians once
         uint256 guardianSize = _guardians.length;
         for (uint256 i = 0; i < guardianSize; i++) {
@@ -44,28 +37,23 @@ contract GuardianMultiSigWallet is
         // solhint-disable-previous-line no-empty-blocks
     }
 
-    function isValidSignature(bytes32 hash, bytes memory signature)
-        external
-        view
-        override
-        returns (bytes4)
-    {
+    function isValidSignature(bytes32 hash, bytes memory signature) external view override returns (bytes4) {
         checkNSignatures(hash, signature, threshold);
         return IERC1271Upgradeable.isValidSignature.selector;
     }
 
     /// @dev divides bytes signature into `uint8 v, bytes32 r, bytes32 s`.
     /// @notice Make sure to perform a bounds check for @param pos, to avoid out of bounds access on @param signatures
-    /// @param pos which signature to read. A prior bounds check of this parameter should be performed, to avoid out of bounds access
+    /// @param pos which signature to read. A prior bounds check of this parameter should be performed, to avoid out of
+    /// bounds access
     /// @param signatures concatenated rsv signatures
-    function signatureSplit(bytes memory signatures, uint256 pos)
+    function signatureSplit(
+        bytes memory signatures,
+        uint256 pos
+    )
         internal
         pure
-        returns (
-            uint8 v,
-            bytes32 r,
-            bytes32 s
-        )
+        returns (uint8 v, bytes32 r, bytes32 s)
     {
         // The signature format is a compact form of:
         //   {bytes32 r}{bytes32 s}{uint8 v}
@@ -84,19 +72,13 @@ contract GuardianMultiSigWallet is
         }
     }
 
-    /** 
-         referece from gnosis safe validation
-    **/
-    function checkNSignatures(
-        bytes32 dataHash,
-        bytes memory signatures,
-        uint16 requiredSignatures
-    ) public view {
+    /**
+     * referece from gnosis safe validation
+     *
+     */
+    function checkNSignatures(bytes32 dataHash, bytes memory signatures, uint16 requiredSignatures) public view {
         // Check that the provided signature data is not too short
-        require(
-            signatures.length >= requiredSignatures * 65,
-            "signatures too short"
-        );
+        require(signatures.length >= requiredSignatures * 65, "signatures too short");
         // There cannot be an owner with address 0.
         address lastOwner = address(0);
         address currentOwner;
@@ -112,61 +94,47 @@ contract GuardianMultiSigWallet is
                 currentOwner = address(uint160(uint256(r)));
 
                 // Check that signature data pointer (s) is not pointing inside the static part of the signatures bytes
-                // This check is not completely accurate, since it is possible that more signatures than the threshold are send.
+                // This check is not completely accurate, since it is possible that more signatures than the threshold
+                // are send.
                 // Here we only check that the pointer is not pointing inside the part that is being processed
-                require(
-                    uint256(s) >= requiredSignatures * 65,
-                    "contract signatures too short"
-                );
+                require(uint256(s) >= requiredSignatures * 65, "contract signatures too short");
 
                 // Check that signature data pointer (s) is in bounds (points to the length of data -> 32 bytes)
-                require(
-                    uint256(s) + (32) <= signatures.length,
-                    "contract signatures out of bounds"
-                );
+                require(uint256(s) + (32) <= signatures.length, "contract signatures out of bounds");
 
-                // Check if the contract signature is in bounds: start of data is s + 32 and end is start + signature length
+                // Check if the contract signature is in bounds: start of data is s + 32 and end is start + signature
+                // length
                 uint256 contractSignatureLen;
                 // solhint-disable-next-line no-inline-assembly
                 assembly {
                     contractSignatureLen := mload(add(add(signatures, s), 0x20))
                 }
-                require(
-                    uint256(s) + 32 + contractSignatureLen <= signatures.length,
-                    "contract signature wrong offset"
-                );
+                require(uint256(s) + 32 + contractSignatureLen <= signatures.length, "contract signature wrong offset");
 
                 // Check signature
                 bytes memory contractSignature;
                 // solhint-disable-next-line no-inline-assembly
                 assembly {
-                    // The signature data for contract signatures is appended to the concatenated signatures and the offset is stored in s
+                    // The signature data for contract signatures is appended to the concatenated signatures and the
+                    // offset is stored in s
                     contractSignature := add(add(signatures, s), 0x20)
                 }
                 (bool success, bytes memory result) = currentOwner.staticcall(
-                    abi.encodeWithSelector(
-                        IERC1271Upgradeable.isValidSignature.selector,
-                        dataHash,
-                        contractSignature
-                    )
+                    abi.encodeWithSelector(IERC1271Upgradeable.isValidSignature.selector, dataHash, contractSignature)
                 );
                 require(
-                    success &&
-                        result.length == 32 &&
-                        abi.decode(result, (bytes32)) ==
-                        bytes32(IERC1271Upgradeable.isValidSignature.selector),
+                    success && result.length == 32
+                        && abi.decode(result, (bytes32)) == bytes32(IERC1271Upgradeable.isValidSignature.selector),
                     "contract signature invalid"
                 );
             } else {
-                // EOA guardian reccover follow the eth_sign flow, the messageHash with the Ethereum message prefix before applying ecrecover
-                currentOwner = ecrecover(keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)), v, r, s);
+                // EOA guardian reccover follow the eth_sign flow, the messageHash with the Ethereum message prefix
+                // before applying ecrecover
+                currentOwner =
+                    ecrecover(keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)), v, r, s);
             }
-            require(
-                currentOwner > lastOwner && isGuardian[currentOwner],
-                "verify failed"
-            );
+            require(currentOwner > lastOwner && isGuardian[currentOwner], "verify failed");
             lastOwner = currentOwner;
         }
     }
-
 }

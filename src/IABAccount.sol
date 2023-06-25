@@ -34,7 +34,6 @@ contract IABAccount is
     IERC721Receiver,
     IERC1155Receiver,
     UUPSUpgradeable,
-    
     BaseERC4337Account
 {
     using ECDSA for bytes32;
@@ -172,13 +171,11 @@ contract IABAccount is
     function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4 magicValue) {
         _handleOverrideStatic();
 
-        try IAccountGuardian(guardian).checkNSignatures(hash, signature, 2){
+        try IAccountGuardian(guardian).checkNSignatures(hash, signature, 2) {
             return IERC1271.isValidSignature.selector;
-        }catch {
+        } catch {
             return "";
         }
-        
-        
     }
 
     /// @dev Returns the EIP-155 chain ID, token contract address, and token ID for the token that
