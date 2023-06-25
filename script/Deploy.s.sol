@@ -11,8 +11,8 @@ import { ERC1967Proxy } from "lib/openzeppelin-contracts/contracts/proxy/ERC1967
 import {Create2} from "openzeppelin-contracts/utils/Create2.sol";
 
 contract Deploy is Script {
-    address eoa1 = address(1);
-    address eoa2 = address(2);
+    address eoa1 = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    address eoa2 = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
     address[] public guardians = [eoa1, eoa2];
    
     function run() external returns(ERC6551Registry, EntryPoint, AccountGuardian,InsureaBagNft, IABAccount){
