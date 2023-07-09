@@ -10,13 +10,15 @@ import { IERC165 } from "openzeppelin-contracts/utils/introspection/IERC165.sol"
 import { IERC721 } from "openzeppelin-contracts/token/ERC721/IERC721.sol";
 import { IERC721Receiver } from "openzeppelin-contracts/token/ERC721/IERC721Receiver.sol";
 import { IERC1155Receiver } from "openzeppelin-contracts/token/ERC1155/IERC1155Receiver.sol";
-import { IERC1271 } from "openzeppelin-contracts/interfaces/IERC1271.sol";
+// import { IERC1271 } from "openzeppelin-contracts/interfaces/IERC1271.sol";
 import { SignatureChecker } from "openzeppelin-contracts/utils/cryptography/SignatureChecker.sol";
 import { UUPSUpgradeable } from "openzeppelin-contracts/proxy/utils/UUPSUpgradeable.sol";
 import { BaseAccount as BaseERC4337Account, IEntryPoint, UserOperation } from "account-abstraction/core/BaseAccount.sol";
 import { IAccountGuardian } from "src/interfaces/IAccountGuardian.sol";
 // import {GuardianMultiSigWallet} from "./GuardianMultiSigWallet.sol";
-
+import { IERC1271Upgradeable } from "openzeppelin-contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
+import { IIABGuardian } from "src/interfaces/IIABGuardian.sol";
+import {console} from "forge-std/console.sol";
 error NotAuthorized();
 error InvalidInput();
 error AccountLocked();
@@ -29,10 +31,10 @@ error OwnershipCycle();
  */
 contract IABAccount is
     IERC165,
-    IERC1271,
     IERC6551Account,
     IERC721Receiver,
     IERC1155Receiver,
+    IERC1271Upgradeable,
     UUPSUpgradeable,
     BaseERC4337Account
 {
@@ -168,14 +170,12 @@ contract IABAccount is
 
     /// @dev EIP-1271 signature validation. By default, only the owner of the account is permissioned to sign.
     /// This function can be overriden.
-    function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4 magicValue) {
+    function isValidSignature(bytes32 hash, bytes memory signature) external view override returns (bytes4 magicValue) {
+        console.log("checking sigs.....");
         _handleOverrideStatic();
-
-        try IAccountGuardian(guardian).checkNSignatures(hash, signature, 2) {
-            return IERC1271.isValidSignature.selector;
-        } catch {
-            return "";
-        }
+        checkNSignatures(hash, signature, 2);
+        console.log("sigs success");
+        return IERC1271Upgradeable.isValidSignature.selector;
     }
 
     /// @dev Returns the EIP-155 chain ID, token contract address, and token ID for the token that
@@ -332,7 +332,7 @@ contract IABAccount is
         returns (uint256 validationData)
     {
         bool isValid = this.isValidSignature(userOpHash.toEthSignedMessageHash(), userOp.signature)
-            == IERC1271.isValidSignature.selector;
+            == IERC1271Upgradeable.isValidSignature.selector;
 
         if (isValid) {
             return 0;
@@ -386,6 +386,106 @@ contract IABAccount is
             assembly {
                 return(add(result, 32), mload(result))
             }
+        }
+    }
+
+    /// @dev divides bytes signature into `uint8 v, bytes32 r, bytes32 s`.
+    /// @notice Make sure to perform a bounds check for @param pos, to avoid out of bounds access on @param signatures
+    /// @param pos which signature to read. A prior bounds check of this parameter should be performed, to avoid out of
+    /// bounds access
+    /// @param signatures concatenated rsv signatures
+    function signatureSplit(
+        bytes memory signatures,
+        uint256 pos
+    )
+        internal
+        pure
+        returns (uint8 v, bytes32 r, bytes32 s)
+    {
+        // The signature format is a compact form of:
+        //   {bytes32 r}{bytes32 s}{uint8 v}
+        // Compact means, uint8 is not padded to 32 bytes.
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            let signaturePos := mul(0x41, pos)
+            r := mload(add(signatures, add(signaturePos, 0x20)))
+            s := mload(add(signatures, add(signaturePos, 0x40)))
+            // Here we are loading the last 32 bytes, including 31 bytes
+            // of 's'. There is no 'mload8' to do this.
+            //
+            // 'byte' is not working due to the Solidity parser, so lets
+            // use the second best option, 'and'
+            v := and(mload(add(signatures, add(signaturePos, 0x41))), 0xff)
+        }
+    }
+
+    /**
+     * referece from gnosis safe validation
+     *
+     */
+    function checkNSignatures(bytes32 dataHash, bytes memory signatures, uint16 requiredSignatures) public view {
+        // Check that the provided signature data is not too short
+        require(signatures.length >= requiredSignatures * 65, "signatures too short");
+        // There cannot be an owner with address 0.
+        address lastOwner = address(0);
+        address currentOwner;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+        uint256 i;
+        for (i = 0; i < requiredSignatures; i++) {
+            (v, r, s) = signatureSplit(signatures, i);
+            if (v == 0) {
+                // If v is 0 then it is a contract signature
+                // When handling contract signatures the address of the contract is encoded into r
+                currentOwner = address(uint160(uint256(r)));
+
+                // Check that signature data pointer (s) is not pointing inside the static part of the signatures bytes
+                // This check is not completely accurate, since it is possible that more signatures than the threshold
+                // are send.
+                // Here we only check that the pointer is not pointing inside the part that is being processed
+                require(uint256(s) >= requiredSignatures * 65, "contract signatures too short");
+
+                // Check that signature data pointer (s) is in bounds (points to the length of data -> 32 bytes)
+                require(uint256(s) + (32) <= signatures.length, "contract signatures out of bounds");
+
+                // Check if the contract signature is in bounds: start of data is s + 32 and end is start + signature
+                // length
+                uint256 contractSignatureLen;
+                // solhint-disable-next-line no-inline-assembly
+                assembly {
+                    contractSignatureLen := mload(add(add(signatures, s), 0x20))
+                }
+                require(uint256(s) + 32 + contractSignatureLen <= signatures.length, "contract signature wrong offset");
+
+                // Check signature
+                bytes memory contractSignature;
+                // solhint-disable-next-line no-inline-assembly
+                assembly {
+                    // The signature data for contract signatures is appended to the concatenated signatures and the
+                    // offset is stored in s
+                    contractSignature := add(add(signatures, s), 0x20)
+                }
+                (bool success, bytes memory result) = currentOwner.staticcall(
+                    abi.encodeWithSelector(IERC1271Upgradeable.isValidSignature.selector, dataHash, contractSignature)
+                );
+                require(
+                    success && result.length == 32
+                        && abi.decode(result, (bytes32)) == bytes32(IERC1271Upgradeable.isValidSignature.selector),
+                    "contract signature invalid"
+                );
+            } else {
+                // EOA guardian reccover follow the eth_sign flow, the messageHash with the Ethereum message prefix
+                // before applying ecrecover
+                currentOwner =
+                    ecrecover(keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)), v, r, s);
+            }
+            require(
+                currentOwner > lastOwner
+                    && (IIABGuardian(guardian).getGuardian() == currentOwner || owner() == currentOwner),
+                "verify failed"
+            );
+            lastOwner = currentOwner;
         }
     }
 }
