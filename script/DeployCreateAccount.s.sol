@@ -8,6 +8,7 @@ import { EntryPoint } from "src/EntryPoint.sol";
 import { IABGuardian } from "src/IABGuardian.sol";
 import { InsureaBag as InsureaBagNft } from "src/InsureaBag.sol";
 import { IABAccount } from "src/IABAccount.sol";
+import {console} from "forge-std/console.sol";
 
 contract DeployCreateAccount is Script {
     address owner = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
@@ -29,6 +30,7 @@ contract DeployCreateAccount is Script {
         nftPolicy.setImplementationAddress(address(accountImpl));
         nftPolicy.setRegistryAddress(address(registry));
         nftPolicy.createInsurance();
+        console.log("Finishing transaction.....");
         vm.stopBroadcast();
     }
 }

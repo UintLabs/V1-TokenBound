@@ -170,9 +170,10 @@ contract IABAccount is
 
     /// @dev EIP-1271 signature validation. By default, only the owner of the account is permissioned to sign.
     /// This function can be overriden.
-    function isValidSignature(bytes32 hash, bytes memory signature) external view override returns (bytes4 magicValue) {
+    function isValidSignature(bytes32 hash, bytes memory signature) public view override returns (bytes4 magicValue) {
         console.log("checking sigs.....");
-        _handleOverrideStatic();
+        // _handleOverrideStatic();
+        console.log("override done....");
         checkNSignatures(hash, signature, 2);
         console.log("sigs success");
         return IERC1271Upgradeable.isValidSignature.selector;
@@ -204,10 +205,13 @@ contract IABAccount is
     /// @dev Returns the owner of the ERC-721 token which owns this account. By default, the owner
     /// of the token has full permissions on the account.
     function owner() public view returns (address) {
+        console.log("Getting token...");
         (uint256 chainId, address tokenContract, uint256 tokenId) = ERC6551AccountLib.token();
-
+        
+        console.log(tokenContract);
+        console.log(tokenId);
         if (chainId != block.chainid) return address(0);
-
+        console.log("Got Owner...");
         return IERC721(tokenContract).ownerOf(tokenId);
     }
 
@@ -387,6 +391,7 @@ contract IABAccount is
                 return(add(result, 32), mload(result))
             }
         }
+        
     }
 
     /// @dev divides bytes signature into `uint8 v, bytes32 r, bytes32 s`.
@@ -423,8 +428,9 @@ contract IABAccount is
      * referece from gnosis safe validation
      *
      */
-    function checkNSignatures(bytes32 dataHash, bytes memory signatures, uint16 requiredSignatures) public view {
+    function checkNSignatures(bytes32 dataHash, bytes memory signatures, uint16 requiredSignatures) internal view {
         // Check that the provided signature data is not too short
+        console.log("Staring checking signature....");
         require(signatures.length >= requiredSignatures * 65, "signatures too short");
         // There cannot be an owner with address 0.
         address lastOwner = address(0);
@@ -433,6 +439,7 @@ contract IABAccount is
         bytes32 r;
         bytes32 s;
         uint256 i;
+        console.log("Starting loop...");
         for (i = 0; i < requiredSignatures; i++) {
             (v, r, s) = signatureSplit(signatures, i);
             if (v == 0) {
@@ -481,10 +488,11 @@ contract IABAccount is
                     ecrecover(keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)), v, r, s);
             }
             require(
-                currentOwner > lastOwner
-                    && (IIABGuardian(guardian).getGuardian() == currentOwner || owner() == currentOwner),
+                currentOwner > lastOwner,
                 "verify failed"
             );
+            console.log("Current owner more than last....");
+            require(IIABGuardian(guardian).getGuardian() == currentOwner || owner() == currentOwner,"verify not owner");
             lastOwner = currentOwner;
         }
     }

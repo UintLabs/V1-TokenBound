@@ -11,12 +11,13 @@ import { IABAccount } from "src/IABAccount.sol";
 import { ERC1967Proxy } from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Create2 } from "openzeppelin-contracts/utils/Create2.sol";
 import { Strings } from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
+import {console} from "forge-std/console.sol";
 
 contract Deploy is Script {
     using Strings for string;
 
     address owner = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
-    address guardianSigner = vm.addr(2);
+    address guardianSigner = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
     address guardianSetter = vm.addr(3);
 
     function run() external returns (ERC6551Registry, EntryPoint, IABGuardian, InsureaBagNft, IABAccount) {
@@ -46,15 +47,20 @@ contract Deploy is Script {
         ERC1967Proxy insureNftProxy =
         new ERC1967Proxy{salt:"6551"}(address(insureNftImpl), abi.encodeWithSelector(insureNftImpl.initialize.selector, "InusreABag","IAB", owner));
         IABAccount accountImpl = new IABAccount{salt:"6551"}(address(iabGuardian),address(entryPoint));
-        InsureaBagNft insureNft = InsureaBagNft(address(insureNftProxy));
-        return (registry, entryPoint, iabGuardian, insureNft, accountImpl);
+        InsureaBagNft nftPolicy = InsureaBagNft(address(insureNftProxy));
+        nftPolicy.toggleMint();
+        nftPolicy.setImplementationAddress(address(accountImpl));
+        nftPolicy.setRegistryAddress(address(registry));
+        nftPolicy.createInsurance();
+        console.log("Finishing transaction.....");
+        return (registry, entryPoint, iabGuardian, nftPolicy, accountImpl);
     }
 
     function writeLatestFile(
         ERC6551Registry registry,
         EntryPoint entryPoint,
         IABGuardian iabGuardian,
-        InsureaBagNft insureNft,
+        InsureaBagNft nftPolicy,
         IABAccount accountImpl
     )
         public
@@ -65,8 +71,8 @@ contract Deploy is Script {
             string.concat('"entryPoint"', ":", '"', Strings.toHexString(address(entryPoint)), '"');
         string memory iabGuardianTxt =
             string.concat('"iabGuardian"', ":", '"', Strings.toHexString(address(iabGuardian)), '"');
-        string memory insureNftTxt =
-            string.concat('"insureNft"', ":", '"', Strings.toHexString(address(insureNft)), '"');
+        string memory nftPolicyTxt =
+            string.concat('"nftPolicy"', ":", '"', Strings.toHexString(address(nftPolicy)), '"');
         string memory accountImplTxt =
             string.concat('"accountImpl"', ":", '"', Strings.toHexString(address(accountImpl)), '"');
         vm.writeFile(
@@ -79,7 +85,7 @@ contract Deploy is Script {
                 ",",
                 iabGuardianTxt,
                 ",",
-                insureNftTxt,
+                nftPolicyTxt,
                 ",",
                 accountImplTxt,
                 "}"

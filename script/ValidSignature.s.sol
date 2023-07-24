@@ -6,9 +6,16 @@ import { ECDSA } from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
 import { AccountGuardian } from "src/AccountGuardian.sol";
 import { IERC1271 } from "openzeppelin-contracts/interfaces/IERC1271.sol";
 import { IABAccount } from "src/IABAccount.sol";
+import { ERC6551Registry } from "src/registry/ERC6551Registry.sol";
+import { EntryPoint } from "src/EntryPoint.sol";
+import { IABGuardian } from "src/IABGuardian.sol";
+import { InsureaBag as InsureaBagNft } from "src/InsureaBag.sol";
+import { Deploy } from "script/Deploy.s.sol";
+import {console} from "forge-std/console.sol";
 
-contract ValidSiganture is Script {
+contract ValidSignature is Script {
     using ECDSA for bytes32;
+    
 
     function run() external {
         bytes memory message = "Hello World";
@@ -20,6 +27,9 @@ contract ValidSiganture is Script {
         // address signer2 = vm.addr(eoaPrivateKey2);
         bytes32 hash = keccak256(abi.encodePacked(message));
         bytes32 digest = hash.toEthSignedMessageHash();
+        // bytes32 digest = hash;
+        console.logBytes32(digest);
+        // log(digest);
         // vm.startPrank(signer1);
 
         (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(eoaPrivateKey1, digest);
@@ -28,9 +38,17 @@ contract ValidSiganture is Script {
         // vm.stopPrank();
         bytes memory signature1 = abi.encodePacked(r1, s1, v1);
         bytes memory signature2 = abi.encodePacked(r2, s2, v2);
-        bytes memory signature = bytes.concat(signature1, signature2);
-        IABAccount account = IABAccount(payable(0xC3F45fCA7db56C99227Be29F7a252056c691627f));
+        bytes memory signature = bytes.concat(signature2, signature1);
+        IABAccount account = IABAccount(payable(0xa78f1AeD8fBB8Ffd5D8dE874f60F86F78FcEF044));
+        // Deploy deployer = new Deploy();
         vm.startBroadcast();
+        // (
+        //     ERC6551Registry registry,
+        //     EntryPoint entryPoint,
+        //     IABGuardian guardian,
+        //     InsureaBagNft nftPolicy,
+        //     IABAccount accountImpl
+        // ) = deployer.deploy();
         account.isValidSignature(hash, signature);
         vm.stopBroadcast();
         // AccountGuardian guardian = AccountGuardian(0x300CD264D50946796e9e4abB3DBd2677adEEE249);
