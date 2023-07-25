@@ -48,11 +48,6 @@ contract Deploy is Script {
         new ERC1967Proxy{salt:"6551"}(address(insureNftImpl), abi.encodeWithSelector(insureNftImpl.initialize.selector, "InusreABag","IAB", owner));
         IABAccount accountImpl = new IABAccount{salt:"6551"}(address(iabGuardian),address(entryPoint));
         InsureaBagNft nftPolicy = InsureaBagNft(address(insureNftProxy));
-        nftPolicy.toggleMint();
-        nftPolicy.setImplementationAddress(address(accountImpl));
-        nftPolicy.setRegistryAddress(address(registry));
-        nftPolicy.createInsurance();
-        console.log("Finishing transaction.....");
         return (registry, entryPoint, iabGuardian, nftPolicy, accountImpl);
     }
 

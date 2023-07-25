@@ -7,7 +7,7 @@ deployCreateAccount:; forge script script/DeployCreateAccount.s.sol:DeployCreate
 
 isValidSig:; forge script script/ValidSignature.s.sol:ValidSignature --rpc-url=http:127.0.0.1:8545 --private-key $(PRIVATE_KEY) -vvvv
 
-anvil-sep:; anvil --fork-url $(SEPOLIA_RPC_URL)
+anvil-sep:; anvil --fork-url $(SEPOLIA_RPC_URL) --fork-block-number 3960841 --fork-chain-id 31337
 
 testing:
 	echo "Testing if this works"
