@@ -25,7 +25,7 @@ contract IABGuardian is AccessControlEnumerable {
         guardian = _newGuardian;
     }
 
-    function getOwnerAdress() public view returns (address) {
+    function getOwnerAddress() public view returns (address) {
         return ownerAddress;
     }
 }

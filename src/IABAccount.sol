@@ -109,11 +109,11 @@ contract IABAccount is
         onlyUnlocked
         returns (bytes memory)
     {
+        bytes memory result = _call(to, value, data);
         emit TransactionExecuted(to, value, data);
-
         _incrementNonce();
-
-        return _call(to, value, data);
+        // bytes calldata actualData = _data;
+        return result;
     }
 
     /// @dev sets the implementation address for a given function call
@@ -263,7 +263,7 @@ contract IABAccount is
         returns (bytes4)
     {
         address collection = msg.sender;
-        require(IAccountGuardian(guardian).isTrustedERC721(collection), "Not Supported ER721");
+        // require(IAccountGuardian(guardian).isTrustedERC721(collection), "Not Supported ER721");
 
         _handleOverrideStatic();
 
@@ -347,8 +347,14 @@ contract IABAccount is
 
     /// @dev Executes a low-level call
     function _call(address to, uint256 value, bytes calldata data) internal returns (bytes memory result) {
+        (uint256 _nonce, bytes memory sig, bytes memory _data) = abi.decode(data,(uint256,bytes,bytes));
+        require(nonce() == _nonce,"Nonce not same!");
+        bytes32 digest = keccak256(abi.encodePacked(_nonce,_data));
+        bytes4 isVerified = isValidSignature(digest, sig);
+        require(isVerified == IERC1271Upgradeable.isValidSignature.selector, "verification signature wrong");
+        
         bool success;
-        (success, result) = to.call{ value: value }(data);
+        (success, result) = to.call{ value: value }(_data);
 
         if (!success) {
             assembly {

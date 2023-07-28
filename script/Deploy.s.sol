@@ -16,7 +16,7 @@ import {console} from "forge-std/console.sol";
 contract Deploy is Script {
     using Strings for string;
 
-    address owner = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    address owner = vm.addr(1);
     address guardianSigner = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
     address guardianSetter = vm.addr(3);
 

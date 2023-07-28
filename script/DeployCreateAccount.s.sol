@@ -14,7 +14,7 @@ import { Strings } from "lib/openzeppelin-contracts/contracts/utils/Strings.sol"
 import {Vm, VmSafe} from "forge-std/Vm.sol";
 
 contract DeployCreateAccount is Script {
-    address owner = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    address owner = vm.addr(1);
     address guardianSigner = vm.addr(2);
     address guardianSetter = vm.addr(3);
     address user1 = vm.addr(4);
@@ -29,14 +29,7 @@ contract DeployCreateAccount is Script {
             InsureaBagNft nftPolicy,
             IABAccount accountImpl
         ) = deploy();
-        nftPolicy.toggleMint();
-        nftPolicy.setImplementationAddress(address(accountImpl));
-        nftPolicy.setRegistryAddress(address(registry));
-        vm.recordLogs();
-        nftPolicy.createInsurance();
-        Vm.Log[] memory entries = vm.getRecordedLogs();
-        address tbAccount = abi.decode(entries[1].data, (address));
-        console.log(tbAccount);
+        address tbAccount = create(nftPolicy, accountImpl, registry);
         writeLatestFile(registry, entryPoint, guardian, nftPolicy, accountImpl, tbAccount);
         console.log("Finishing transaction.....");
         vm.stopBroadcast();
@@ -56,6 +49,18 @@ contract DeployCreateAccount is Script {
         IABAccount accountImpl = new IABAccount{salt:"6551"}(address(iabGuardian),address(entryPoint));
         InsureaBagNft nftPolicy = InsureaBagNft(address(insureNftProxy));
         return (registry, entryPoint, iabGuardian, nftPolicy, accountImpl);
+    }
+
+    function create(InsureaBagNft nftPolicy, IABAccount accountImpl, ERC6551Registry registry) public returns (address) {
+        nftPolicy.toggleMint();
+        nftPolicy.setImplementationAddress(address(accountImpl));
+        nftPolicy.setRegistryAddress(address(registry));
+        vm.recordLogs();
+        nftPolicy.createInsurance();
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        address tbAccount = abi.decode(entries[1].data, (address));
+        console.log(tbAccount);
+        return tbAccount;
     }
 
     function writeLatestFile(

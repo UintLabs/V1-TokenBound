@@ -9,6 +9,8 @@ isValidSig:; forge script script/ValidSignature.s.sol:ValidSignature --rpc-url=h
 
 anvil-sep:; anvil --fork-url $(SEPOLIA_RPC_URL) --fork-block-number 3960841 --fork-chain-id 31337
 
+account-test:; forge test --match-path test/IABAccount.t.sol --match-contract IABAccountTest
+
 testing:
 	echo "Testing if this works"
 	echo "this works!!!!"
