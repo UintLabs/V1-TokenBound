@@ -167,6 +167,67 @@ function testSendERC721() public nftDeploy {
         assertEq(postBalance, preBalance + 1 ether);
     }
 
+    function testRevertWithWrongNonce() public {
+        uint256 nonce = account.nonce()+1;
+        bytes memory message = "";
+        bytes32 hash = keccak256(abi.encodePacked(nonce,message));
+        bytes32 digest = hash.toEthSignedMessageHash();
+        console2.logBytes32(digest);
+        // since 4 is the private key for the accountOwner address, we have 4 passed below
+        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(4, digest);
+        // since 2 is the private key for the accountOwner address, we have 2 passed below
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(2, digest);
+        bytes memory signature1 = abi.encodePacked(r1, s1, v1);
+        bytes memory signature2 = abi.encodePacked(r2, s2, v2);
+        bytes memory signature = bytes.concat(signature1, signature2);
+        
+        bytes memory data = abi.encode(nonce,signature,message);
+        
+        hoax(accountOwner,10 ether);
+        vm.expectRevert("Nonce not same!");
+        account.executeCall(address(10),1 ether,data);   
+    }
+
+    function testRevertWithWrongSignature() public {
+        uint256 nonce = account.nonce();
+        bytes memory message = "";
+        bytes32 hash = keccak256(abi.encodePacked(nonce,message));
+        bytes32 digest = hash.toEthSignedMessageHash();
+        console2.logBytes32(digest);
+        // since 6 is the private key for the accountOwner2 address, we have 6 passed below,
+        //  this is the wrong private key for the account so it should revert
+        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(6, digest);
+        // since 2 is the private key for the accountOwner address, we have 2 passed below
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(2, digest);
+        bytes memory signature1 = abi.encodePacked(r1, s1, v1);
+        bytes memory signature2 = abi.encodePacked(r2, s2, v2);
+        bytes memory signature = bytes.concat(signature1, signature2);
+        
+        bytes memory data = abi.encode(nonce,signature,message);
+        
+        hoax(accountOwner,10 ether);
+        vm.expectRevert("verify not owner");
+        account.executeCall(address(10),1 ether,data);
+    }
+
+    function testRevertWithSameSigner() public {
+        uint256 nonce = account.nonce();
+        bytes memory message = "";
+        bytes32 hash = keccak256(abi.encodePacked(nonce,message));
+        bytes32 digest = hash.toEthSignedMessageHash();
+        console2.logBytes32(digest);
+        // since 4 is the private key for the accountOwner address, we have 4 passed below,
+        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(4, digest);
+        bytes memory signature1 = abi.encodePacked(r1, s1, v1);
+        bytes memory signature = bytes.concat(signature1, signature1);
+        
+        bytes memory data = abi.encode(nonce,signature,message);
+        
+        hoax(accountOwner,10 ether);
+        vm.expectRevert("verify failed");
+        account.executeCall(address(10),1 ether,data);
+    }
+
     // function testvalidateUserOp() public {
         
     // }
