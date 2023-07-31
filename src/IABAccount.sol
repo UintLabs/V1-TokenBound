@@ -347,12 +347,7 @@ contract IABAccount is
 
     /// @dev Executes a low-level call
     function _call(address to, uint256 value, bytes calldata data) internal returns (bytes memory result) {
-        (uint256 _nonce, bytes memory sig, bytes memory _data) = abi.decode(data,(uint256,bytes,bytes));
-        require(nonce() == _nonce,"Nonce not same!");
-        bytes32 digest = keccak256(abi.encodePacked(_nonce,_data));
-        bytes4 isVerified = isValidSignature(digest, sig);
-        require(isVerified == IERC1271Upgradeable.isValidSignature.selector, "verification signature wrong");
-        
+        bytes memory _data = checkSignature(data);
         bool success;
         (success, result) = to.call{ value: value }(_data);
 
@@ -501,5 +496,14 @@ contract IABAccount is
             require(IIABGuardian(guardian).getGuardian() == currentOwner || owner() == currentOwner,"verify not owner");
             lastOwner = currentOwner;
         }
+    }
+
+    function checkSignature(bytes calldata data) public returns (bytes memory){
+        (uint256 _nonce, bytes memory sig, bytes memory _data) = abi.decode(data,(uint256,bytes,bytes));
+        require(nonce() == _nonce,"Nonce not same!");
+        bytes32 digest = keccak256(abi.encodePacked(_nonce,_data));
+        bytes4 isVerified = isValidSignature(digest, sig);
+        require(isVerified == IERC1271Upgradeable.isValidSignature.selector, "verification signature wrong");
+        return _data;
     }
 }

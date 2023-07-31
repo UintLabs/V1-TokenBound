@@ -11,6 +11,4 @@ anvil-sep:; anvil --fork-url $(SEPOLIA_RPC_URL) --fork-block-number 3960841 --fo
 
 account-test:; forge test --match-path test/IABAccount.t.sol --match-contract IABAccountTest
 
-testing:
-	echo "Testing if this works"
-	echo "this works!!!!"
+test-account:; forge test --match-path test/IABAccount.t.sol --match-contract IABAccountTest
