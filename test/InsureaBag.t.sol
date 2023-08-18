@@ -29,7 +29,6 @@ contract InsureaBagTest is PRBTest, StdCheats {
     string constant domainName = "Tokenshield";
     string constant domainVersion = "1";
 
-
     function setUp() public {
         //Create deployer address and private key
         (deployer, deployerPkey) = makeAddrAndKey("deployer");

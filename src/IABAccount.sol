@@ -102,7 +102,6 @@ contract IABAccount is
         }
         _entryPoint = entryPoint_;
         guardian = _guardian;
-
     }
 
     /// @dev allows eth transfers by default, but allows account owner to override
@@ -477,8 +476,8 @@ contract IABAccount is
         // console.log("Inside Check Signature");
         (Tx memory transaction, bytes memory sig) = abi.decode(data, (Tx, bytes));
         require(nonce() == transaction.nonce, "Nonce not same!");
-        require(to == transaction.to,"Receiving Address is wrong");
-        require(value == transaction.value,"Sending Value is wrong");
+        require(to == transaction.to, "Receiving Address is wrong");
+        require(value == transaction.value, "Sending Value is wrong");
         // console.log(transaction.nonce);
         // console.log(transaction.value);
         // console.log(transaction.to);
@@ -529,8 +528,7 @@ contract IABAccount is
         return digest;
     }
 
-
-    function setDomainSeperator(string memory _name, string memory _version)  external {
+    function setDomainSeperator(string memory _name, string memory _version) external {
         EIP712Domain memory _domain =
             EIP712Domain({ name: _name, version: _version, chainId: block.chainid, verifyingContract: address(this) });
         DOMAIN_SEPARATOR = getDomainHash(_domain);

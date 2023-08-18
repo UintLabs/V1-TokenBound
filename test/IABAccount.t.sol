@@ -271,6 +271,56 @@ contract IABAccountTest is Test {
         account.executeCall(address(10), 1 ether, data);
     }
 
+    function testRevertIfToAddressDoesntMatch() public nftDeploy {
+        uint256 nonce = account.nonce();
+        bytes memory message =
+            abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", address(account), receiverAddress, 1);
+        // bytes memory message = "";
+        Tx memory transaction = Tx({ to: address(nft), value: 0, nonce: nonce, data: message });
+        bytes32 hash = getTransactionHash(transaction);
+        bytes32 digest = getTransactionHashWithDomainSeperator(hash);
+        // bytes32 digestMessageHash = digest.toEthSignedMessageHash();
+        // console2.logBytes32(digest);
+        // since 4 is the private key for the accountOwner address, we have 4 passed below
+        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(4, digest);
+        // since 2 is the private key for the accountOwner address, we have 2 passed below
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(2, digest);
+        bytes memory signature1 = abi.encodePacked(r1, s1, v1);
+        bytes memory signature2 = abi.encodePacked(r2, s2, v2);
+        bytes memory signature = bytes.concat(signature1, signature2);
+
+        bytes memory data = abi.encode(transaction, signature);
+        hoax(accountOwner, 10 ether);
+        vm.deal(address(account), 10 ether);
+        vm.expectRevert("Receiving Address is wrong");
+        account.executeCall(address(10), 0, data); //Here the 'to' address should be address of NFT
+    }
+
+    function testRevertIfValueDoesntMatch() public nftDeploy {
+        uint256 nonce = account.nonce();
+        bytes memory message =
+            abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", address(account), receiverAddress, 1);
+        // bytes memory message = "";
+        Tx memory transaction = Tx({ to: address(nft), value: 0, nonce: nonce, data: message });
+        bytes32 hash = getTransactionHash(transaction);
+        bytes32 digest = getTransactionHashWithDomainSeperator(hash);
+        // bytes32 digestMessageHash = digest.toEthSignedMessageHash();
+        // console2.logBytes32(digest);
+        // since 4 is the private key for the accountOwner address, we have 4 passed below
+        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(4, digest);
+        // since 2 is the private key for the accountOwner address, we have 2 passed below
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(2, digest);
+        bytes memory signature1 = abi.encodePacked(r1, s1, v1);
+        bytes memory signature2 = abi.encodePacked(r2, s2, v2);
+        bytes memory signature = bytes.concat(signature1, signature2);
+
+        bytes memory data = abi.encode(transaction, signature);
+        hoax(accountOwner, 10 ether);
+        vm.deal(address(account), 10 ether);
+        vm.expectRevert("Sending Value is wrong");
+        account.executeCall(address(nft), 10, data); //Here the 'value' should be 0 as we arent sending any ETH
+    }
+
     // function testvalidateUserOp() public {
 
     // }

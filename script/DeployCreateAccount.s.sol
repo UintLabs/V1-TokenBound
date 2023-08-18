@@ -62,8 +62,7 @@ contract DeployCreateAccount is Script {
         InsureaBagNft insureNftImpl = new InsureaBagNft{salt:"6551"}();
         ERC1967Proxy insureNftProxy =
         new ERC1967Proxy{salt:"6551"}(address(insureNftImpl), abi.encodeWithSelector(insureNftImpl.initialize.selector, "InusreABag","IAB", owner));
-        IABAccount accountImpl =
-            new IABAccount{salt:"6551"}(address(iabGuardian),address(entryPoint));
+        IABAccount accountImpl = new IABAccount{salt:"6551"}(address(iabGuardian),address(entryPoint));
         InsureaBagNft nftPolicy = InsureaBagNft(address(insureNftProxy));
         return (registry, entryPoint, iabGuardian, nftPolicy, accountImpl);
     }
