@@ -2,9 +2,10 @@
 pragma solidity ^0.8.19;
 
 import { Ownable2Step } from "openzeppelin-contracts/access/Ownable2Step.sol";
-
+import { GuardianMultiSigWallet } from "./GuardianMultiSigWallet.sol";
 /// @dev manages upgrade and cross-chain execution settings for accounts
-contract AccountGuardian is Ownable2Step {
+
+contract AccountGuardian is Ownable2Step, GuardianMultiSigWallet {
     /// @dev mapping from cross-chain executor => is trusted
     mapping(address => bool) public isTrustedImplementation;
 

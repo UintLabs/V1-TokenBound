@@ -1,15 +1,37 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.0;
+
+import "openzeppelin-contracts/utils/Create2.sol";
+import "./ERC6551BytecodeLib.sol";
+import { console } from "forge-std/console.sol";
 
 library ERC6551AccountLib {
+    function computeAddress(
+        address registry,
+        address implementation,
+        uint256 chainId,
+        address tokenContract,
+        uint256 tokenId,
+        uint256 _salt
+    )
+        internal
+        pure
+        returns (address)
+    {
+        bytes32 bytecodeHash =
+            keccak256(ERC6551BytecodeLib.getCreationCode(implementation, chainId, tokenContract, tokenId, _salt));
+
+        return Create2.computeAddress(bytes32(_salt), bytecodeHash, registry);
+    }
+
     function token() internal view returns (uint256, address, uint256) {
         bytes memory footer = new bytes(0x60);
 
         assembly {
             // copy 0x60 bytes from end of footer
-            extcodecopy(address(), add(footer, 0x20), 0x4d, 0xad)
+            extcodecopy(address(), add(footer, 0x20), 0x4d, 0x60)
         }
-
+        // console.log("Got Footer, decoding.....");
         return abi.decode(footer, (uint256, address, uint256));
     }
 
@@ -18,7 +40,7 @@ library ERC6551AccountLib {
 
         assembly {
             // copy 0x20 bytes from beginning of footer
-            extcodecopy(address(), add(footer, 0x20), 0x2d, 0x4d)
+            extcodecopy(address(), add(footer, 0x20), 0x2d, 0x20)
         }
 
         return abi.decode(footer, (uint256));

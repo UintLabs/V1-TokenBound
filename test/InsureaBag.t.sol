@@ -26,6 +26,8 @@ contract InsureaBagTest is PRBTest, StdCheats {
     address public implementation;
     address public deployer;
     uint256 public deployerPkey;
+    string constant domainName = "Tokenshield";
+    string constant domainVersion = "1";
 
     function setUp() public {
         //Create deployer address and private key
@@ -44,7 +46,7 @@ contract InsureaBagTest is PRBTest, StdCheats {
 
         //Set-up of Account
         vm.prank(deployer);
-        IABAccount acc = new IABAccount(address(guardian), address(entrypoint));
+        IABAccount acc = new IABAccount{salt:"6551"}(address(guardian),address(entrypoint));
         implementation = address(acc);
         accproxy = new AccountProxy(address(implementation));
 

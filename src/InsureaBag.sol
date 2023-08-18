@@ -83,9 +83,7 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
 
     function createInsurance() external payable mintInitiated {
         _mint(msg.sender, idTracker.current());
-        registry.createAccount(
-            accountImplementation, block.chainid, address(this), idTracker.current(), 0, "0x8129fc1c"
-        );
+        registry.createAccount(accountImplementation, block.chainid, address(this), idTracker.current(), 0, "");
         idTracker.increment();
     }
 
