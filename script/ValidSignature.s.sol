@@ -11,49 +11,93 @@ import { EntryPoint } from "src/EntryPoint.sol";
 import { IABGuardian } from "src/IABGuardian.sol";
 import { InsureaBag as InsureaBagNft } from "src/InsureaBag.sol";
 import { Deploy } from "script/Deploy.s.sol";
-import {console} from "forge-std/console.sol";
+import { console } from "forge-std/console.sol";
 
 contract ValidSignature is Script {
     using ECDSA for bytes32;
-    
+
+    struct EIP712Domain {
+        string name;
+        string version;
+        uint256 chainId;
+        address verifyingContract;
+    }
+
+    struct Tx {
+        address to;
+        uint256 value;
+        uint256 nonce;
+        bytes data;
+    }
+
+    string constant domainName = "Tokenshield";
+    string constant domainVersion = "1";
+    bytes32 DOMAIN_SEPARATOR = getDomainHash(
+        EIP712Domain({
+            name: domainName,
+            version: domainVersion,
+            chainId: block.chainid,
+            verifyingContract: address(this)
+        })
+    );
+
+    address owner = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    address guardianSigner = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+    address guardianSetter = vm.addr(3);
 
     function run() external {
-        bytes memory message = "Hello World";
-        // address eoa1 = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
-        // address eoa2 = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+        // bytes memory message = "Hello World";
+        Tx memory transaction = Tx({ to: owner, value: 1 ether, nonce: 0, data: "" });
         uint256 eoaPrivateKey1 = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
         uint256 eoaPrivateKey2 = 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d;
-        // address signer1 = vm.addr(eoaPrivateKey1);
-        // address signer2 = vm.addr(eoaPrivateKey2);
-        bytes32 hash = keccak256(abi.encodePacked(message));
-        bytes32 digest = hash.toEthSignedMessageHash();
-        // bytes32 digest = hash;
-        console.logBytes32(digest);
-        // log(digest);
-        // vm.startPrank(signer1);
 
-        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(eoaPrivateKey1, digest);
-        // vm.startPrank(signer2);
-        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(eoaPrivateKey2, digest);
-        // vm.stopPrank();
+        bytes32 hash = getTransactionHash(transaction);
+        bytes32 digest = getTransactionHashWithDomainSeperator(hash);
+        bytes32 digestMessageHash = digest.toEthSignedMessageHash();
+
+        console.logBytes32(digest);
+
+        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(eoaPrivateKey1, digestMessageHash);
+
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(eoaPrivateKey2, digestMessageHash);
+
         bytes memory signature1 = abi.encodePacked(r1, s1, v1);
         bytes memory signature2 = abi.encodePacked(r2, s2, v2);
         bytes memory signature = bytes.concat(signature2, signature1);
-        IABAccount account = IABAccount(payable(0xa78f1AeD8fBB8Ffd5D8dE874f60F86F78FcEF044));
-        // Deploy deployer = new Deploy();
+        IABAccount account = IABAccount(payable(0xe7769C9711c27d3e0cE67f8623776383A4793392));
+
         vm.startBroadcast();
-        // (
-        //     ERC6551Registry registry,
-        //     EntryPoint entryPoint,
-        //     IABGuardian guardian,
-        //     InsureaBagNft nftPolicy,
-        //     IABAccount accountImpl
-        // ) = deployer.deploy();
-        account.isValidSignature(hash, signature);
+
+        account.isValidSignature(digest, signature);
         vm.stopBroadcast();
-        // AccountGuardian guardian = AccountGuardian(0x300CD264D50946796e9e4abB3DBd2677adEEE249);
-        // bytes4 selector = guardian.isValidSignature(hash, signature);
-        // bytes4 actualSelector = IERC1271.isValidSignature.selector;
-        // bool isValid =  selector == bytes32(IERC1271.isValidSignature.selector);
+    }
+
+    function getDomainHash(EIP712Domain memory domain) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes(domain.name)),
+                keccak256(bytes(domain.version)),
+                domain.chainId,
+                domain.verifyingContract
+            )
+        );
+    }
+
+    function getTransactionHash(Tx memory _transaction) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256("Tx(address to,uint256 value, uint256 nonce, bytes data)"),
+                _transaction.to,
+                _transaction.value,
+                _transaction.nonce,
+                _transaction.data
+            )
+        );
+    }
+
+    function getTransactionHashWithDomainSeperator(bytes32 transactionHash) internal view returns (bytes32) {
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, transactionHash));
+        return digest;
     }
 }

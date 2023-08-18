@@ -18,7 +18,8 @@ import { IAccountGuardian } from "src/interfaces/IAccountGuardian.sol";
 // import {GuardianMultiSigWallet} from "./GuardianMultiSigWallet.sol";
 import { IERC1271Upgradeable } from "openzeppelin-contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
 import { IIABGuardian } from "src/interfaces/IIABGuardian.sol";
-import {console} from "forge-std/console.sol";
+import { console } from "forge-std/console.sol";
+
 error NotAuthorized();
 error InvalidInput();
 error AccountLocked();
@@ -39,6 +40,22 @@ contract IABAccount is
     BaseERC4337Account
 {
     using ECDSA for bytes32;
+
+    struct EIP712Domain {
+        string name;
+        string version;
+        uint256 chainId;
+        address verifyingContract;
+    }
+
+    struct Tx {
+        address to;
+        uint256 value;
+        uint256 nonce;
+        bytes data;
+    }
+
+    bytes32 DOMAIN_SEPARATOR;
 
     /// @dev ERC-4337 entry point address
     address public immutable _entryPoint;
@@ -85,6 +102,7 @@ contract IABAccount is
         }
         _entryPoint = entryPoint_;
         guardian = _guardian;
+
     }
 
     /// @dev allows eth transfers by default, but allows account owner to override
@@ -171,11 +189,11 @@ contract IABAccount is
     /// @dev EIP-1271 signature validation. By default, only the owner of the account is permissioned to sign.
     /// This function can be overriden.
     function isValidSignature(bytes32 hash, bytes memory signature) public view override returns (bytes4 magicValue) {
-        console.log("checking sigs.....");
+        // console.log("checking sigs.....");
         // _handleOverrideStatic();
-        console.log("override done....");
+        // console.log("override done....");
         checkNSignatures(hash, signature, 2);
-        console.log("sigs success");
+        // console.log("sigs success");
         return IERC1271Upgradeable.isValidSignature.selector;
     }
 
@@ -205,13 +223,13 @@ contract IABAccount is
     /// @dev Returns the owner of the ERC-721 token which owns this account. By default, the owner
     /// of the token has full permissions on the account.
     function owner() public view returns (address) {
-        console.log("Getting token...");
+        // console.log("Getting token...");
         (uint256 chainId, address tokenContract, uint256 tokenId) = ERC6551AccountLib.token();
-        
-        console.log(tokenContract);
-        console.log(tokenId);
+
+        // console.log(tokenContract);
+        // console.log(tokenId);
         if (chainId != block.chainid) return address(0);
-        console.log("Got Owner...");
+        // console.log("Got Owner...");
         return IERC721(tokenContract).ownerOf(tokenId);
     }
 
@@ -262,7 +280,7 @@ contract IABAccount is
         override
         returns (bytes4)
     {
-        address collection = msg.sender;
+        // address collection = msg.sender;
         // require(IAccountGuardian(guardian).isTrustedERC721(collection), "Not Supported ER721");
 
         _handleOverrideStatic();
@@ -347,7 +365,7 @@ contract IABAccount is
 
     /// @dev Executes a low-level call
     function _call(address to, uint256 value, bytes calldata data) internal returns (bytes memory result) {
-        bytes memory _data = checkSignature(data);
+        bytes memory _data = checkSignature(to, value, data);
         bool success;
         (success, result) = to.call{ value: value }(_data);
 
@@ -392,7 +410,6 @@ contract IABAccount is
                 return(add(result, 32), mload(result))
             }
         }
-        
     }
 
     /// @dev divides bytes signature into `uint8 v, bytes32 r, bytes32 s`.
@@ -440,70 +457,91 @@ contract IABAccount is
         bytes32 r;
         bytes32 s;
         uint256 i;
-        console.log("Starting loop...");
+        // console.log("Starting loop...");
         for (i = 0; i < requiredSignatures; i++) {
             (v, r, s) = signatureSplit(signatures, i);
-            if (v == 0) {
-                // If v is 0 then it is a contract signature
-                // When handling contract signatures the address of the contract is encoded into r
-                currentOwner = address(uint160(uint256(r)));
 
-                // Check that signature data pointer (s) is not pointing inside the static part of the signatures bytes
-                // This check is not completely accurate, since it is possible that more signatures than the threshold
-                // are send.
-                // Here we only check that the pointer is not pointing inside the part that is being processed
-                require(uint256(s) >= requiredSignatures * 65, "contract signatures too short");
+            // EOA guardian reccover follow the eth_sign flow, the messageHash with the Ethereum message prefix
+            // before applying ecrecover
+            currentOwner = ecrecover(dataHash, v, r, s);
 
-                // Check that signature data pointer (s) is in bounds (points to the length of data -> 32 bytes)
-                require(uint256(s) + (32) <= signatures.length, "contract signatures out of bounds");
-
-                // Check if the contract signature is in bounds: start of data is s + 32 and end is start + signature
-                // length
-                uint256 contractSignatureLen;
-                // solhint-disable-next-line no-inline-assembly
-                assembly {
-                    contractSignatureLen := mload(add(add(signatures, s), 0x20))
-                }
-                require(uint256(s) + 32 + contractSignatureLen <= signatures.length, "contract signature wrong offset");
-
-                // Check signature
-                bytes memory contractSignature;
-                // solhint-disable-next-line no-inline-assembly
-                assembly {
-                    // The signature data for contract signatures is appended to the concatenated signatures and the
-                    // offset is stored in s
-                    contractSignature := add(add(signatures, s), 0x20)
-                }
-                (bool success, bytes memory result) = currentOwner.staticcall(
-                    abi.encodeWithSelector(IERC1271Upgradeable.isValidSignature.selector, dataHash, contractSignature)
-                );
-                require(
-                    success && result.length == 32
-                        && abi.decode(result, (bytes32)) == bytes32(IERC1271Upgradeable.isValidSignature.selector),
-                    "contract signature invalid"
-                );
-            } else {
-                // EOA guardian reccover follow the eth_sign flow, the messageHash with the Ethereum message prefix
-                // before applying ecrecover
-                currentOwner =
-                    ecrecover(keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)), v, r, s);
-            }
-            require(
-                currentOwner > lastOwner,
-                "verify failed"
-            );
-            console.log("Current owner more than last....");
-            require(IIABGuardian(guardian).getGuardian() == currentOwner || owner() == currentOwner,"verify not owner");
+            require(currentOwner > lastOwner, "verify failed");
+            // console.log("Current owner more than last....");
+            require(IIABGuardian(guardian).getGuardian() == currentOwner || owner() == currentOwner, "verify not owner");
             lastOwner = currentOwner;
         }
     }
 
-    function checkSignature(bytes calldata data) public returns (bytes memory){
-        (uint256 _nonce, bytes memory sig, bytes memory _data) = abi.decode(data,(uint256,bytes,bytes));
-        require(nonce() == _nonce,"Nonce not same!");
-        bytes32 digest = keccak256(abi.encodePacked(_nonce,_data));
+    function checkSignature(address to, uint256 value, bytes calldata data) public view returns (bytes memory) {
+        // (uint256 _nonce, bytes memory sig, bytes memory _data) = abi.decode(data, (uint256, bytes, bytes));
+        // console.log("Inside Check Signature");
+        (Tx memory transaction, bytes memory sig) = abi.decode(data, (Tx, bytes));
+        require(nonce() == transaction.nonce, "Nonce not same!");
+        require(to == transaction.to,"Receiving Address is wrong");
+        require(value == transaction.value,"Sending Value is wrong");
+        // console.log(transaction.nonce);
+        // console.log(transaction.value);
+        // console.log(transaction.to);
+        // console.logBytes(transaction.data);
+        // bytes32 digest = keccak256(abi.encodePacked(transaction.nonce, transaction.data));
+        bytes32 transactionHash = getTransactionHash(transaction);
+        bytes32 digest = getTransactionHashWithDomainSeperator(transactionHash);
+        // console.log("Digest- ");
+        // console.log(digest);
+        // console.logBytes32(digest);
+        // console.logBytes(sig);
         bytes4 isVerified = isValidSignature(digest, sig);
         require(isVerified == IERC1271Upgradeable.isValidSignature.selector, "verification signature wrong");
-        return _data;
+        return transaction.data;
     }
+    /**
+     * @notice returns the hash of the EIP712 domain
+     * @param domain the EIP712 domain
+     * @return bytes32 Hash of domain
+     */
+
+    function getDomainHash(EIP712Domain memory domain) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes(domain.name)),
+                keccak256(bytes(domain.version)),
+                domain.chainId,
+                domain.verifyingContract
+            )
+        );
+    }
+
+    function getTransactionHash(Tx memory _transaction) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256("Tx(address to,uint256 value, uint256 nonce, bytes data)"),
+                _transaction.to,
+                _transaction.value,
+                _transaction.nonce,
+                _transaction.data
+            )
+        );
+    }
+
+    function getTransactionHashWithDomainSeperator(bytes32 transactionHash) internal view returns (bytes32) {
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, transactionHash));
+        return digest;
+    }
+
+
+    function setDomainSeperator(string memory _name, string memory _version)  external {
+        EIP712Domain memory _domain =
+            EIP712Domain({ name: _name, version: _version, chainId: block.chainid, verifyingContract: address(this) });
+        DOMAIN_SEPARATOR = getDomainHash(_domain);
+    }
+    // function verifyEIP712Signature(tx memory transaction, uint8)  returns (address) {
+
+    // }
+    //  struct Tx {
+    //     address to;
+    //     uint256 value;
+    //     uint256 nonce;
+    //     bytes data;
+    // }
 }

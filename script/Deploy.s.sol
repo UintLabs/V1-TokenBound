@@ -11,14 +11,30 @@ import { IABAccount } from "src/IABAccount.sol";
 import { ERC1967Proxy } from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Create2 } from "openzeppelin-contracts/utils/Create2.sol";
 import { Strings } from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
-import {console} from "forge-std/console.sol";
+import { console } from "forge-std/console.sol";
 
 contract Deploy is Script {
     using Strings for string;
 
+    struct EIP712Domain {
+        string name;
+        string version;
+        uint256 chainId;
+        address verifyingContract;
+    }
+
+    struct Tx {
+        address to;
+        uint256 value;
+        uint256 nonce;
+        bytes data;
+    }
+
     address owner = vm.addr(1);
     address guardianSigner = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
     address guardianSetter = vm.addr(3);
+    string constant domainName = "Tokenshield";
+    string constant domainVersion = "1";
 
     function run() external returns (ERC6551Registry, EntryPoint, IABGuardian, InsureaBagNft, IABAccount) {
         // bytes memory code = registryBytecode;
@@ -46,7 +62,8 @@ contract Deploy is Script {
         InsureaBagNft insureNftImpl = new InsureaBagNft{salt:"6551"}();
         ERC1967Proxy insureNftProxy =
         new ERC1967Proxy{salt:"6551"}(address(insureNftImpl), abi.encodeWithSelector(insureNftImpl.initialize.selector, "InusreABag","IAB", owner));
-        IABAccount accountImpl = new IABAccount{salt:"6551"}(address(iabGuardian),address(entryPoint));
+        IABAccount accountImpl =
+            new IABAccount{salt:"6551"}(address(iabGuardian),address(entryPoint));
         InsureaBagNft nftPolicy = InsureaBagNft(address(insureNftProxy));
         return (registry, entryPoint, iabGuardian, nftPolicy, accountImpl);
     }
@@ -73,17 +90,7 @@ contract Deploy is Script {
         vm.writeFile(
             string.concat(root, "/deployments/latest.json"),
             string.concat(
-                "{",
-                registryTxt,
-                ",",
-                entryPointTxt,
-                ",",
-                iabGuardianTxt,
-                ",",
-                nftPolicyTxt,
-                ",",
-                accountImplTxt,
-                "}"
+                "{", registryTxt, ",", entryPointTxt, ",", iabGuardianTxt, ",", nftPolicyTxt, ",", accountImplTxt, "}"
             )
         );
     }

@@ -8,16 +8,32 @@ import { EntryPoint } from "src/EntryPoint.sol";
 import { IABGuardian } from "src/IABGuardian.sol";
 import { InsureaBag as InsureaBagNft } from "src/InsureaBag.sol";
 import { IABAccount } from "src/IABAccount.sol";
-import {console} from "forge-std/console.sol";
+import { console } from "forge-std/console.sol";
 import { ERC1967Proxy } from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Strings } from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
-import {Vm, VmSafe} from "forge-std/Vm.sol";
+import { Vm, VmSafe } from "forge-std/Vm.sol";
 
 contract DeployCreateAccount is Script {
-    address owner = vm.addr(1);
+    struct EIP712Domain {
+        string name;
+        string version;
+        uint256 chainId;
+        address verifyingContract;
+    }
+
+    struct Tx {
+        address to;
+        uint256 value;
+        uint256 nonce;
+        bytes data;
+    }
+
+    address owner = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
     address guardianSigner = vm.addr(2);
     address guardianSetter = vm.addr(3);
     address user1 = vm.addr(4);
+    string constant domainName = "Tokenshield";
+    string constant domainVersion = "1";
 
     function run() external {
         // Deploy deployer = new Deploy();
@@ -46,12 +62,20 @@ contract DeployCreateAccount is Script {
         InsureaBagNft insureNftImpl = new InsureaBagNft{salt:"6551"}();
         ERC1967Proxy insureNftProxy =
         new ERC1967Proxy{salt:"6551"}(address(insureNftImpl), abi.encodeWithSelector(insureNftImpl.initialize.selector, "InusreABag","IAB", owner));
-        IABAccount accountImpl = new IABAccount{salt:"6551"}(address(iabGuardian),address(entryPoint));
+        IABAccount accountImpl =
+            new IABAccount{salt:"6551"}(address(iabGuardian),address(entryPoint));
         InsureaBagNft nftPolicy = InsureaBagNft(address(insureNftProxy));
         return (registry, entryPoint, iabGuardian, nftPolicy, accountImpl);
     }
 
-    function create(InsureaBagNft nftPolicy, IABAccount accountImpl, ERC6551Registry registry) public returns (address) {
+    function create(
+        InsureaBagNft nftPolicy,
+        IABAccount accountImpl,
+        ERC6551Registry registry
+    )
+        public
+        returns (address)
+    {
         nftPolicy.toggleMint();
         nftPolicy.setImplementationAddress(address(accountImpl));
         nftPolicy.setRegistryAddress(address(registry));
@@ -59,6 +83,8 @@ contract DeployCreateAccount is Script {
         nftPolicy.createInsurance();
         Vm.Log[] memory entries = vm.getRecordedLogs();
         address tbAccount = abi.decode(entries[1].data, (address));
+        IABAccount account = IABAccount(payable(tbAccount));
+        account.setDomainSeperator(domainName, domainVersion);
         console.log(tbAccount);
         return tbAccount;
     }
