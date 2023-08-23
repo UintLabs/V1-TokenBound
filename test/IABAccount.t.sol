@@ -20,8 +20,9 @@ import { Vm } from "forge-std/Vm.sol";
 import { ECDSA } from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
 import { IERC1271 } from "openzeppelin-contracts/interfaces/IERC1271.sol";
 import { console } from "forge-std/console.sol";
+import { HelpersConfig } from "script/helpers/HelpersConfig.s.sol";
 
-contract IABAccountTest is Test {
+contract IABAccountTest is Test, HelpersConfig {
     using ECDSA for bytes32;
 
     Deploy private deploy;
@@ -34,9 +35,9 @@ contract IABAccountTest is Test {
     IABAccount private account;
     MockNFT private nft;
 
-    address guardianOwner = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
-    address guardianSigner = vm.addr(2);
-    address guardianSetter = vm.addr(3);
+    address guardianOwner;
+    address guardianSigner;
+    address guardianSetter;
     address accountOwner = vm.addr(4);
     address receiverAddress = vm.addr(5);
     address accountOwner2 = vm.addr(6);
@@ -55,16 +56,22 @@ contract IABAccountTest is Test {
         bytes data;
     }
 
-    string constant domainName = "Tokenshield";
-    string constant domainVersion = "1";
+    string domainName;
+    string domainVersion;
     bytes32 DOMAIN_SEPARATOR;
 
     function setUp() public {
-        // deploy = new Deploy();
-        // (registry, entrypoint, guardian, nftPolicy, account) = deploy.deploy();
+
         deployCreate = new DeployCreateAccount();
         (registry, entrypoint, guardian, nftPolicy, accountImpl) = deployCreate.deploy();
-        // startHoax(guardianOwner, 10 ether);
+        ChainConfig memory config = getConfig();
+        guardianOwner = config.contractAdmin;
+        guardianSigner = config.guardianSigner;
+        guardianSetter = config.guardianSetter;
+        console.log(guardianOwner);
+        console.log(guardianSigner);
+        console.log(guardianSetter);
+
         startHoax(guardianOwner);
         nftPolicy.toggleMint();
         nftPolicy.setImplementationAddress(address(accountImpl));
