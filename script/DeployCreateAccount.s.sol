@@ -12,8 +12,9 @@ import { console } from "forge-std/console.sol";
 import { ERC1967Proxy } from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Strings } from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 import { Vm, VmSafe } from "forge-std/Vm.sol";
+import { HelpersConfig } from "script/helpers/HelpersConfig.s.sol";
 
-contract DeployCreateAccount is Script {
+contract DeployCreateAccount is Script, HelpersConfig {
     struct EIP712Domain {
         string name;
         string version;
@@ -28,16 +29,18 @@ contract DeployCreateAccount is Script {
         bytes data;
     }
 
-    address owner = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
-    address guardianSigner = vm.addr(2);
-    address guardianSetter = vm.addr(3);
     address user1 = vm.addr(4);
-    string constant domainName = "Tokenshield";
-    string constant domainVersion = "1";
 
     function run() external {
         // Deploy deployer = new Deploy();
-        vm.startBroadcast();
+        uint256 privateKey;
+        if (chainId == 11_155_111) {
+            privateKey = vm.envUint("SEPOLIA_PRIVATE_KEY");
+        } else {
+            privateKey = vm.envUint("PRIVATE_KEY");
+        }
+
+        vm.startBroadcast(privateKey);
         (
             ERC6551Registry registry,
             EntryPoint entryPoint,
@@ -52,13 +55,19 @@ contract DeployCreateAccount is Script {
     }
 
     function deploy() public returns (ERC6551Registry, EntryPoint, IABGuardian, InsureaBagNft, IABAccount) {
-        ERC6551Registry registry = new ERC6551Registry{salt:"6551"}();
-        // address registry = Create2.deploy(0,bytes32("0x6551"),keccak256(code));
+        ChainConfig memory config = getConfig();
+        address owner = config.contractAdmin;
+        address guardianSigner = config.guardianSigner;
+        address guardianSetter = config.guardianSetter;
+        ERC6551Registry registry;
+        if (chainId == 11_155_111) {
+            registry = ERC6551Registry(0x02101dfB77FDE026414827Fdc604ddAF224F0921);
+        } else {
+            registry = new ERC6551Registry{salt:"6551"}();
+        }
         EntryPoint entryPoint = new EntryPoint{salt:"6551"}();
         IABGuardian iabGuardian = new IABGuardian{salt:"6551"}(owner,guardianSigner,guardianSetter);
-        // ERC1967Proxy guardianProxy =
-        // new ERC1967Proxy{salt:"6551"}(address(iabGuardian),
-        // abi.encodeWithSelector(accountGuardianImpl.initialize.selector, guardians,2));
+
         InsureaBagNft insureNftImpl = new InsureaBagNft{salt:"6551"}();
         ERC1967Proxy insureNftProxy =
         new ERC1967Proxy{salt:"6551"}(address(insureNftImpl), abi.encodeWithSelector(insureNftImpl.initialize.selector, "InusreABag","IAB", owner));
@@ -75,6 +84,9 @@ contract DeployCreateAccount is Script {
         public
         returns (address)
     {
+        ChainConfig memory config = getConfig();
+        string memory domainName = config.domainName;
+        string memory domainVersion = config.domainVersion;
         nftPolicy.toggleMint();
         nftPolicy.setImplementationAddress(address(accountImpl));
         nftPolicy.setRegistryAddress(address(registry));

@@ -12,8 +12,9 @@ import { ERC1967Proxy } from "lib/openzeppelin-contracts/contracts/proxy/ERC1967
 import { Create2 } from "openzeppelin-contracts/utils/Create2.sol";
 import { Strings } from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 import { console } from "forge-std/console.sol";
+import { HelpersConfig } from "script/helpers/HelpersConfig.s.sol";
 
-contract Deploy is Script {
+contract Deploy is Script, HelpersConfig {
     using Strings for string;
 
     struct EIP712Domain {
@@ -30,15 +31,15 @@ contract Deploy is Script {
         bytes data;
     }
 
-    address owner = vm.addr(1);
-    address guardianSigner = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
-    address guardianSetter = vm.addr(3);
-    string constant domainName = "Tokenshield";
-    string constant domainVersion = "1";
-
     function run() external returns (ERC6551Registry, EntryPoint, IABGuardian, InsureaBagNft, IABAccount) {
         // bytes memory code = registryBytecode;
-        vm.startBroadcast();
+        uint256 privateKey;
+        if (chainId == 11_155_111) {
+            privateKey = vm.envUint("SEPOLIA_PRIVATE_KEY");
+        } else {
+            privateKey = vm.envUint("PRIVATE_KEY");
+        }
+        vm.startBroadcast(privateKey);
         (
             ERC6551Registry registry,
             EntryPoint entryPoint,
@@ -52,7 +53,18 @@ contract Deploy is Script {
     }
 
     function deploy() public returns (ERC6551Registry, EntryPoint, IABGuardian, InsureaBagNft, IABAccount) {
-        ERC6551Registry registry = new ERC6551Registry{salt:"6551"}();
+        ChainConfig memory config = getConfig();
+        address owner = config.contractAdmin;
+        address guardianSigner = config.guardianSigner;
+        address guardianSetter = config.guardianSetter;
+        // string memory domainName = config.domainName;
+        // string memory domainVersion = config.domainVersion;
+        ERC6551Registry registry;
+        if (chainId == 11_155_111) {
+            registry = ERC6551Registry(0x02101dfB77FDE026414827Fdc604ddAF224F0921);
+        } else {
+            registry = new ERC6551Registry{salt:"6551"}();
+        }
         // address registry = Create2.deploy(0,bytes32("0x6551"),keccak256(code));
         EntryPoint entryPoint = new EntryPoint{salt:"6551"}();
         IABGuardian iabGuardian = new IABGuardian{salt:"6551"}(owner,guardianSigner,guardianSetter);
