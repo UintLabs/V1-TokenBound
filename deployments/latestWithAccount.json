@@ -1,1 +1,8 @@
-{"registry":"0x02101dfb77fde026414827fdc604ddaf224f0921","entryPoint":"0x07cea04d24d02dbc0d9723b4b5e7f3932ed8a7f4","iabGuardian":"0x88f310290b032b6af83386b39cd7a1014a54d897","nftPolicy":"0x13b7bc1c15c249a9902085e7c10c4188d655d090","accountImpl":"0xffab05e1afc52acb83a53f06e881989f20f901ab","tbAccount":"0xe7e042bd887f392feb028c44bc56546c604e4222"}
+{
+  "registry": "0x55cdb80fad6b2022cf91ac6c492aa314f4ff581c",
+  "entryPoint": "0x07cea04d24d02dbc0d9723b4b5e7f3932ed8a7f4",
+  "iabGuardian": "0x6a929c68a7f90f7e42ed09f635b30045b600c583",
+  "nftPolicy": "0x78e32c3e490918ef75e5870a4f5e39bac1d953b8",
+  "accountImpl": "0x276fba562c746f3d11f23308a75fd2f86d4901a9",
+  "tbAccount": "0x6d7aa3b8ab4098a3285b61bbe535d8bd9d3aa858"
+}

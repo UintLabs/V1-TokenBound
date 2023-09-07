@@ -26,7 +26,6 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
 
     event VaultCreated(address indexed account);
 
-
     /*//////////////////////////////////////////////////////////////
                                  State Vars
     //////////////////////////////////////////////////////////////*/
@@ -90,7 +89,8 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
 
     function createInsurance() external payable mintInitiated {
         _mint(msg.sender, idTracker.current());
-        address account = registry.createAccount(accountImplementation, block.chainid, address(this), idTracker.current(), 0, "");
+        address account =
+            registry.createAccount(accountImplementation, block.chainid, address(this), idTracker.current(), 0, "");
         idTracker.increment();
         emit VaultCreated(account);
     }

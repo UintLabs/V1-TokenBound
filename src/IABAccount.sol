@@ -57,7 +57,6 @@ contract IABAccount is
         bytes data;
     }
 
-
     /// @dev ERC-4337 entry point address
     address public immutable _entryPoint;
 
@@ -534,5 +533,4 @@ contract IABAccount is
             )
         );
     }
-    
 }

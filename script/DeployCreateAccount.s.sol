@@ -69,8 +69,9 @@ contract DeployCreateAccount is Script, HelpersConfig {
         IABGuardian iabGuardian = new IABGuardian{salt:"65516551"}(owner,guardianSigner,guardianSetter);
 
         InsureaBagNft insureNftImpl = new InsureaBagNft{salt:"65516551"}();
-        ERC1967Proxy insureNftProxy =
-        new ERC1967Proxy{salt:"6551"}(address(insureNftImpl), abi.encodeWithSelector(insureNftImpl.initialize.selector, "InusreABag","IAB", owner));
+        ERC1967Proxy insureNftProxy = new ERC1967Proxy{salt:"6551"}(address(insureNftImpl), 
+                                        abi.encodeWithSelector(insureNftImpl.initialize.selector, 
+                                        "InusreABag","IAB", owner));
         IABAccount accountImpl = new IABAccount{salt:"65516551"}(address(iabGuardian),address(entryPoint));
         InsureaBagNft nftPolicy = InsureaBagNft(address(insureNftProxy));
         return (registry, entryPoint, iabGuardian, nftPolicy, accountImpl);
@@ -111,6 +112,7 @@ contract DeployCreateAccount is Script, HelpersConfig {
         public
     {
         string memory root = vm.projectRoot();
+        /* solhint-disable */
         string memory registryTxt = string.concat('"registry"', ":", '"', Strings.toHexString(address(registry)), '"');
         string memory entryPointTxt =
             string.concat('"entryPoint"', ":", '"', Strings.toHexString(address(entryPoint)), '"');
@@ -140,5 +142,6 @@ contract DeployCreateAccount is Script, HelpersConfig {
                 "}"
             )
         );
+        /* solhint-enable */
     }
 }
