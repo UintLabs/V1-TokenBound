@@ -19,6 +19,7 @@ import { IAccountGuardian } from "src/interfaces/IAccountGuardian.sol";
 import { IERC1271Upgradeable } from "openzeppelin-contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
 import { IIABGuardian } from "src/interfaces/IIABGuardian.sol";
 import { console } from "forge-std/console.sol";
+import { EIP712 } from "openzeppelin-contracts/utils/cryptography/EIP712.sol";
 
 error NotAuthorized();
 error InvalidInput();
@@ -37,7 +38,8 @@ contract IABAccount is
     IERC1155Receiver,
     IERC1271Upgradeable,
     UUPSUpgradeable,
-    BaseERC4337Account
+    BaseERC4337Account,
+    EIP712
 {
     using ECDSA for bytes32;
 
@@ -55,7 +57,6 @@ contract IABAccount is
         bytes data;
     }
 
-    bytes32 DOMAIN_SEPARATOR;
 
     /// @dev ERC-4337 entry point address
     address public immutable _entryPoint;
@@ -96,7 +97,7 @@ contract IABAccount is
         _;
     }
 
-    constructor(address _guardian, address entryPoint_) {
+    constructor(address _guardian, address entryPoint_) EIP712("TokenShield", "1") {
         if (_guardian == address(0) || entryPoint_ == address(0)) {
             revert InvalidInput();
         }
@@ -447,7 +448,7 @@ contract IABAccount is
      */
     function checkNSignatures(bytes32 dataHash, bytes memory signatures, uint16 requiredSignatures) internal view {
         // Check that the provided signature data is not too short
-        console.log("Staring checking signature....");
+        // console.log("Staring checking signature....");
         require(signatures.length >= requiredSignatures * 65, "signatures too short");
         // There cannot be an owner with address 0.
         address lastOwner = address(0);
@@ -466,6 +467,13 @@ contract IABAccount is
 
             require(currentOwner > lastOwner, "verify failed");
             // console.log("Current owner more than last....");
+            // console.log("Hash in contract");
+            // console.logBytes32(dataHash);
+            // console.log("Current Owner");
+            // console.log(currentOwner);
+            // console.log("Guardian addresss");
+            address _guardian = IIABGuardian(guardian).getGuardian();
+            // console.log(_guardian);
             require(IIABGuardian(guardian).getGuardian() == currentOwner || owner() == currentOwner, "verify not owner");
             lastOwner = currentOwner;
         }
@@ -475,6 +483,10 @@ contract IABAccount is
         // (uint256 _nonce, bytes memory sig, bytes memory _data) = abi.decode(data, (uint256, bytes, bytes));
         // console.log("Inside Check Signature");
         (Tx memory transaction, bytes memory sig) = abi.decode(data, (Tx, bytes));
+        // console.log(transaction.nonce);
+        // console.log(transaction.value);
+        // console.log(transaction.to);
+        // console.logBytes(transaction.data);
         require(nonce() == transaction.nonce, "Nonce not same!");
         require(to == transaction.to, "Receiving Address is wrong");
         require(value == transaction.value, "Sending Value is wrong");
@@ -484,10 +496,10 @@ contract IABAccount is
         // console.logBytes(transaction.data);
         // bytes32 digest = keccak256(abi.encodePacked(transaction.nonce, transaction.data));
         bytes32 transactionHash = getTransactionHash(transaction);
-        bytes32 digest = getTransactionHashWithDomainSeperator(transactionHash);
-        // console.log("Digest- ");
-        // console.log(digest);
+        bytes32 digest = _hashTypedDataV4(transactionHash);
+        // console.log("Digest in contract- ");
         // console.logBytes32(digest);
+        // console.log("Signature in contract");
         // console.logBytes(sig);
         bytes4 isVerified = isValidSignature(digest, sig);
         require(isVerified == IERC1271Upgradeable.isValidSignature.selector, "verification signature wrong");
@@ -514,32 +526,13 @@ contract IABAccount is
     function getTransactionHash(Tx memory _transaction) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
-                keccak256("Tx(address to,uint256 value, uint256 nonce, bytes data)"),
+                keccak256("Tx(address to,uint256 value,uint256 nonce,bytes data)"),
                 _transaction.to,
                 _transaction.value,
                 _transaction.nonce,
-                _transaction.data
+                keccak256(bytes(_transaction.data))
             )
         );
     }
-
-    function getTransactionHashWithDomainSeperator(bytes32 transactionHash) internal view returns (bytes32) {
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, transactionHash));
-        return digest;
-    }
-
-    function setDomainSeperator(string memory _name, string memory _version) external {
-        EIP712Domain memory _domain =
-            EIP712Domain({ name: _name, version: _version, chainId: block.chainid, verifyingContract: address(this) });
-        DOMAIN_SEPARATOR = getDomainHash(_domain);
-    }
-    // function verifyEIP712Signature(tx memory transaction, uint8)  returns (address) {
-
-    // }
-    //  struct Tx {
-    //     address to;
-    //     uint256 value;
-    //     uint256 nonce;
-    //     bytes data;
-    // }
+    
 }

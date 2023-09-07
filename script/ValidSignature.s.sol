@@ -37,7 +37,7 @@ contract ValidSignature is Script {
             name: domainName,
             version: domainVersion,
             chainId: block.chainid,
-            verifyingContract: address(this)
+            verifyingContract: 0x1868F2C16f920C62b42F049c84a1eE976958EE82
         })
     );
 
@@ -47,25 +47,50 @@ contract ValidSignature is Script {
 
     function run() external {
         // bytes memory message = "Hello World";
-        Tx memory transaction = Tx({ to: owner, value: 1 ether, nonce: 0, data: "" });
-        uint256 eoaPrivateKey1 = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
-        uint256 eoaPrivateKey2 = 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d;
+        // Tx memory transaction = Tx({ to: owner, value: 1 ether, nonce: 0, data: "" });
+        // uint256 eoaPrivateKey1 = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+        // uint256 eoaPrivateKey2 = 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d;
 
+        // bytes32 hash = getTransactionHash(transaction);
+        // bytes32 digest = getTransactionHashWithDomainSeperator(hash);
+        // bytes32 digestMessageHash = digest.toEthSignedMessageHash();
+
+        // console.logBytes32(digest);
+
+        // (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(eoaPrivateKey1, digestMessageHash);
+
+        // (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(eoaPrivateKey2, digestMessageHash);
+
+        // bytes memory signature1 = abi.encodePacked(r1, s1, v1);
+        // bytes memory signature2 = abi.encodePacked(r2, s2, v2);
+        // bytes memory signature = bytes.concat(signature2, signature1);
+        IABAccount account = IABAccount(payable(0xDF64039c42Cf52770c8D9C17A8D4F76A73645958));
+        uint256 nonce = account.nonce();
+        Tx memory transaction = Tx({ to: 0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65, value: 1 ether, nonce: nonce, data: '' });
         bytes32 hash = getTransactionHash(transaction);
         bytes32 digest = getTransactionHashWithDomainSeperator(hash);
-        bytes32 digestMessageHash = digest.toEthSignedMessageHash();
-
-        console.logBytes32(digest);
-
-        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(eoaPrivateKey1, digestMessageHash);
-
-        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(eoaPrivateKey2, digestMessageHash);
-
+        // bytes32 digestMessageHash = digest.toEthSignedMessageHash();
+        // since 4 is the private key for the accountOwner address, we have 4 passed below
+        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(vm.envUint("SEPOLIA_PRIVATE_KEY"), digest);
+        // since 2 is the private key for the accountOwner address, we have 2 passed below
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(0x2, digest);
         bytes memory signature1 = abi.encodePacked(r1, s1, v1);
         bytes memory signature2 = abi.encodePacked(r2, s2, v2);
         bytes memory signature = bytes.concat(signature2, signature1);
-        IABAccount account = IABAccount(payable(0xe7769C9711c27d3e0cE67f8623776383A4793392));
-
+        console.log("Digest Outside- ");
+        console.logBytes32(digest);
+        console.log("Hash Outside- ");
+        console.logBytes32(hash);
+        
+        console.log("Signature1-");
+        console.logBytes(signature1);
+        console.log("Signature1-");
+        console.logBytes(signature2);
+        console.log("Transaction");
+        console.logBytes(transaction.data);
+        // console.log(v1);
+        // console.logBytes32(r1);
+        // console.logBytes32(s1);
         vm.startBroadcast();
 
         account.isValidSignature(digest, signature);
@@ -87,7 +112,7 @@ contract ValidSignature is Script {
     function getTransactionHash(Tx memory _transaction) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
-                keccak256("Tx(address to,uint256 value, uint256 nonce, bytes data)"),
+                keccak256("Tx(address to,uint256 value,uint256 nonce,bytes data)"),
                 _transaction.to,
                 _transaction.value,
                 _transaction.nonce,

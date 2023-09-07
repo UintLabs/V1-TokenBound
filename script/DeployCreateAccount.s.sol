@@ -63,15 +63,15 @@ contract DeployCreateAccount is Script, HelpersConfig {
         if (chainId == 11_155_111) {
             registry = ERC6551Registry(0x02101dfB77FDE026414827Fdc604ddAF224F0921);
         } else {
-            registry = new ERC6551Registry{salt:"6551"}();
+            registry = new ERC6551Registry{salt:"65516551"}();
         }
-        EntryPoint entryPoint = new EntryPoint{salt:"6551"}();
-        IABGuardian iabGuardian = new IABGuardian{salt:"6551"}(owner,guardianSigner,guardianSetter);
+        EntryPoint entryPoint = new EntryPoint{salt:"65516551"}();
+        IABGuardian iabGuardian = new IABGuardian{salt:"65516551"}(owner,guardianSigner,guardianSetter);
 
-        InsureaBagNft insureNftImpl = new InsureaBagNft{salt:"6551"}();
+        InsureaBagNft insureNftImpl = new InsureaBagNft{salt:"65516551"}();
         ERC1967Proxy insureNftProxy =
         new ERC1967Proxy{salt:"6551"}(address(insureNftImpl), abi.encodeWithSelector(insureNftImpl.initialize.selector, "InusreABag","IAB", owner));
-        IABAccount accountImpl = new IABAccount{salt:"6551"}(address(iabGuardian),address(entryPoint));
+        IABAccount accountImpl = new IABAccount{salt:"65516551"}(address(iabGuardian),address(entryPoint));
         InsureaBagNft nftPolicy = InsureaBagNft(address(insureNftProxy));
         return (registry, entryPoint, iabGuardian, nftPolicy, accountImpl);
     }
@@ -95,7 +95,7 @@ contract DeployCreateAccount is Script, HelpersConfig {
         Vm.Log[] memory entries = vm.getRecordedLogs();
         address tbAccount = abi.decode(entries[1].data, (address));
         IABAccount account = IABAccount(payable(tbAccount));
-        account.setDomainSeperator(domainName, domainVersion);
+        // account.setDomainSeperator(domainName, domainVersion);
         console.log(tbAccount);
         return tbAccount;
     }
