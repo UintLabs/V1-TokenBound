@@ -4,14 +4,11 @@ pragma solidity ^0.8.19;
 import { Script } from "forge-std/Script.sol";
 import { ERC6551Registry } from "src/registry/ERC6551Registry.sol";
 import { EntryPoint } from "src/EntryPoint.sol";
-import { AccountGuardian } from "src/AccountGuardian.sol";
 import { IABGuardian } from "src/IABGuardian.sol";
 import { InsureaBag as InsureaBagNft } from "src/InsureaBag.sol";
 import { IABAccount } from "src/IABAccount.sol";
 import { ERC1967Proxy } from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import { Create2 } from "openzeppelin-contracts/utils/Create2.sol";
 import { Strings } from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
-import { console } from "forge-std/console.sol";
 import { HelpersConfig } from "script/helpers/HelpersConfig.s.sol";
 
 contract Deploy is Script, HelpersConfig {
@@ -72,8 +69,9 @@ contract Deploy is Script, HelpersConfig {
         // new ERC1967Proxy{salt:"6551"}(address(iabGuardian),
         // abi.encodeWithSelector(accountGuardianImpl.initialize.selector, guardians,2));
         InsureaBagNft insureNftImpl = new InsureaBagNft{salt:"6551"}();
-        ERC1967Proxy insureNftProxy =
-        new ERC1967Proxy{salt:"6551"}(address(insureNftImpl), abi.encodeWithSelector(insureNftImpl.initialize.selector, "InusreABag","IAB", owner));
+        ERC1967Proxy insureNftProxy = new ERC1967Proxy{salt:"6551"}(address(insureNftImpl), 
+                                        abi.encodeWithSelector(insureNftImpl.initialize.selector, 
+                                            "InusreABag","IAB", owner));
         IABAccount accountImpl = new IABAccount{salt:"6551"}(address(iabGuardian),address(entryPoint));
         InsureaBagNft nftPolicy = InsureaBagNft(address(insureNftProxy));
         return (registry, entryPoint, iabGuardian, nftPolicy, accountImpl);
@@ -89,6 +87,7 @@ contract Deploy is Script, HelpersConfig {
         public
     {
         string memory root = vm.projectRoot();
+        /* solhint-disable */
         string memory registryTxt = string.concat('"registry"', ":", '"', Strings.toHexString(address(registry)), '"');
         string memory entryPointTxt =
             string.concat('"entryPoint"', ":", '"', Strings.toHexString(address(entryPoint)), '"');
@@ -104,5 +103,6 @@ contract Deploy is Script, HelpersConfig {
                 "{", registryTxt, ",", entryPointTxt, ",", iabGuardianTxt, ",", nftPolicyTxt, ",", accountImplTxt, "}"
             )
         );
+        /* solhint-enable */
     }
 }

@@ -24,7 +24,7 @@ contract HelpersConfig is Script {
         if (chainId == 31_337) {
             config = getAnvilConfig();
         }
-        if (chainId == 11155111) {
+        if (chainId == 11_155_111) {
             config = getSepoliaConfig();
         }
 
@@ -44,7 +44,7 @@ contract HelpersConfig is Script {
     function getSepoliaConfig() internal view returns (ChainConfig memory) {
         address adminAddress = vm.envAddress("SEPOLIA_ADMIN_ADDRESS");
         address guardSigner = vm.envAddress("SEPOLIA_GUARDIAN_SIGNER");
-        address guardSetter = vm.envAddress("SEPOLIA_GUARDIAN_SETTER"); 
+        address guardSetter = vm.envAddress("SEPOLIA_GUARDIAN_SETTER");
         return ChainConfig({
             contractAdmin: adminAddress,
             guardianSigner: guardSigner,

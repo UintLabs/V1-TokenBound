@@ -43,7 +43,7 @@ contract DeployERC20 is Script, HelpersConfig {
         address addressToMint = 0xf46beA4c3Ba0455Bf9537282238eabA193851e30;
         vm.startBroadcast(privateKey);
         MockERC20 token = new MockERC20();
-        token.mint(addressToMint, 1000000);
+        token.mint(addressToMint, 1_000_000);
         vm.stopBroadcast();
     }
 }

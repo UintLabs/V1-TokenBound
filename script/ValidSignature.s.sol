@@ -66,7 +66,8 @@ contract ValidSignature is Script {
         // bytes memory signature = bytes.concat(signature2, signature1);
         IABAccount account = IABAccount(payable(0xDF64039c42Cf52770c8D9C17A8D4F76A73645958));
         uint256 nonce = account.nonce();
-        Tx memory transaction = Tx({ to: 0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65, value: 1 ether, nonce: nonce, data: '' });
+        Tx memory transaction =
+            Tx({ to: 0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65, value: 1 ether, nonce: nonce, data: "" });
         bytes32 hash = getTransactionHash(transaction);
         bytes32 digest = getTransactionHashWithDomainSeperator(hash);
         // bytes32 digestMessageHash = digest.toEthSignedMessageHash();
@@ -81,7 +82,7 @@ contract ValidSignature is Script {
         console.logBytes32(digest);
         console.log("Hash Outside- ");
         console.logBytes32(hash);
-        
+
         console.log("Signature1-");
         console.logBytes(signature1);
         console.log("Signature1-");
