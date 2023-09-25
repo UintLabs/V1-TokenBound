@@ -7,6 +7,7 @@ import { EntryPoint } from "src/EntryPoint.sol";
 import { IABGuardian } from "src/IABGuardian.sol";
 import { InsureaBag as InsureaBagNft } from "src/InsureaBag.sol";
 import { IABAccount } from "src/IABAccount.sol";
+import {MockAggregatorV3} from "src/mock/MockPriceFeeds.sol";
 import { ERC1967Proxy } from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Strings } from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 import { HelpersConfig } from "script/helpers/HelpersConfig.s.sol";
@@ -54,6 +55,7 @@ contract Deploy is Script, HelpersConfig {
         address owner = config.contractAdmin;
         address guardianSigner = config.guardianSigner;
         address guardianSetter = config.guardianSetter;
+        // address ethPriceFeed = config.ethPriceFeed;
         // string memory domainName = config.domainName;
         // string memory domainVersion = config.domainVersion;
         ERC6551Registry registry;
@@ -61,6 +63,8 @@ contract Deploy is Script, HelpersConfig {
             registry = ERC6551Registry(0x02101dfB77FDE026414827Fdc604ddAF224F0921);
         } else {
             registry = new ERC6551Registry{salt:"6551"}();
+            MockAggregatorV3 mockPriceFeed = new MockAggregatorV3();
+            config.ethPriceFeed = address(mockPriceFeed);
         }
         // address registry = Create2.deploy(0,bytes32("0x6551"),keccak256(code));
         EntryPoint entryPoint = new EntryPoint{salt:"6551"}();
@@ -71,7 +75,7 @@ contract Deploy is Script, HelpersConfig {
         InsureaBagNft insureNftImpl = new InsureaBagNft{salt:"6551"}();
         ERC1967Proxy insureNftProxy = new ERC1967Proxy{salt:"6551"}(address(insureNftImpl), 
                                         abi.encodeWithSelector(insureNftImpl.initialize.selector, 
-                                            "InusreABag","IAB", owner));
+                                            "InusreABag","IAB", owner, config.ethPriceFeed));
         IABAccount accountImpl = new IABAccount{salt:"6551"}(address(iabGuardian),address(entryPoint));
         InsureaBagNft nftPolicy = InsureaBagNft(address(insureNftProxy));
         return (registry, entryPoint, iabGuardian, nftPolicy, accountImpl);

@@ -95,7 +95,7 @@ contract InsureaBagTest is PRBTest, StdCheats {
 
     function testSetTokenURI_Success() public {
         vm.prank(deployer);
-        nftContract.setBaseURI("https://Insureabag");
+        nftContract.setBaseURI("https://tokenshield.io");
 
         vm.prank(deployer);
         nftContract.setImplementationAddress(address(implementation));
@@ -111,13 +111,13 @@ contract InsureaBagTest is PRBTest, StdCheats {
         assertEq(nftContract.ownerOf(0), address(10));
 
         vm.prank(address(10));
-        assertEq(nftContract.tokenURI(0), "https://Insureabag");
+        assertEq(nftContract.tokenURI(0), "https://tokenshield.io");
     }
 
     function testSetTokenURI_Revert() public {
         vm.prank(address(10));
         vm.expectRevert();
-        nftContract.setBaseURI("https://Insureabag");
+        nftContract.setBaseURI("https://tokenshield.io");
     }
 
     function testAccountCreation_Success() public {

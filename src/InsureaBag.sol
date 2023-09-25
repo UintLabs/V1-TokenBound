@@ -7,6 +7,8 @@ import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/s
 import { UUPSUpgradeable } from "openzeppelin-contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { ERC721Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import { CountersUpgradeable } from "openzeppelin-contracts-upgradeable/utils/CountersUpgradeable.sol";
+import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import { console } from "forge-std/console.sol";
 
 contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable {
     using CountersUpgradeable for CountersUpgradeable.Counter;
@@ -19,6 +21,8 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
     error InsuranceNotStarted();
     error ZeroAddress();
     error InsuranceNotInitiated();
+    error PriceFeedReturnsZeroOrLess();
+    error NotEnoughEthSent();
 
     /*//////////////////////////////////////////////////////////////
                                  Events
@@ -32,16 +36,18 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
 
     CountersUpgradeable.Counter idTracker;
     IERC6551Registry registry;
+    AggregatorV3Interface internal ethPriceFeed;
 
     string baseURI;
     address accountImplementation;
     bool public initiatedMint;
 
-    function initialize(string memory _name, string memory _symbol, address _address) external initializer {
+    function initialize(string memory _name, string memory _symbol, address _address, address _ethPriceFeedAddress) external initializer {
         __ERC721_init(_name, _symbol);
         __AccessControl_init();
         __ReentrancyGuard_init();
         _grantRole(DEFAULT_ADMIN_ROLE, _address);
+        ethPriceFeed = AggregatorV3Interface(_ethPriceFeedAddress);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -88,6 +94,9 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
     //////////////////////////////////////////////////////////////*/
 
     function createInsurance() external payable mintInitiated {
+        if (msg.value < getWeiPerUsd()) {
+            revert NotEnoughEthSent();
+        }
         _mint(msg.sender, idTracker.current());
         address account =
             registry.createAccount(accountImplementation, block.chainid, address(this), idTracker.current(), 0, "");
@@ -108,6 +117,29 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
     function tokenURI(uint256 _tokenId) public view override returns (string memory) {
         _requireMinted(_tokenId);
         return baseURI;
+    }
+
+    function getWeiPerUsd() public view  returns (uint256 weiPerUsd) {
+        uint8 decimal = ethPriceFeed.decimals();
+        (
+            /* uint80 roundID */,
+            int answer,
+            /*uint startedAt*/,
+            /*uint timeStamp*/,
+            /*uint80 answeredInRound*/
+        ) = ethPriceFeed.latestRoundData();
+        uint256 chainlinkPrice;
+        if (answer< 0 ) {
+            revert PriceFeedReturnsZeroOrLess();
+        } else {
+            chainlinkPrice = uint256(answer);
+        }
+        // console.log(chainlinkPrice);
+        uint256 decimalCorrection = 10 ** decimal;
+        weiPerUsd = (1 ether * decimalCorrection)/chainlinkPrice;
+        require(weiPerUsd!=0,"Cant be zero");
+        // console.log("Wei Per USD");
+        // console.log(weiPerUsd);
     }
 
     /*//////////////////////////////////////////////////////////////

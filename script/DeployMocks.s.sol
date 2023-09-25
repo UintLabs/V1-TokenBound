@@ -18,7 +18,7 @@ contract DeployERC721 is Script, HelpersConfig {
             privateKey = vm.envUint("PRIVATE_KEY");
         }
 
-        address addressToMint = 0x74543780D09D7E152e8025da5893D7AAB1365950;
+        address addressToMint = 0xB721347D2938a5594a12DF5Cc36D598b839Cb98f;
         vm.startBroadcast(privateKey);
         MockNFT nft = new MockNFT();
         nft.safeMint(addressToMint, 1);

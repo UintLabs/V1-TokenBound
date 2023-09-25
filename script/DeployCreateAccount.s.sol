@@ -8,6 +8,7 @@ import { EntryPoint } from "src/EntryPoint.sol";
 import { IABGuardian } from "src/IABGuardian.sol";
 import { InsureaBag as InsureaBagNft } from "src/InsureaBag.sol";
 import { IABAccount } from "src/IABAccount.sol";
+import {MockAggregatorV3} from "src/mock/MockPriceFeeds.sol";
 import { console } from "forge-std/console.sol";
 import { ERC1967Proxy } from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Strings } from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
@@ -59,20 +60,23 @@ contract DeployCreateAccount is Script, HelpersConfig {
         address owner = config.contractAdmin;
         address guardianSigner = config.guardianSigner;
         address guardianSetter = config.guardianSetter;
+        // address ethPriceFeed = config.ethPriceFeed;
         ERC6551Registry registry;
         if (chainId == 11_155_111) {
             registry = ERC6551Registry(0x02101dfB77FDE026414827Fdc604ddAF224F0921);
         } else {
-            registry = new ERC6551Registry{salt:"65516551"}();
+            registry = new ERC6551Registry{salt:"655165516551"}();
+            MockAggregatorV3 mockPriceFeed = new MockAggregatorV3();
+            config.ethPriceFeed = address(mockPriceFeed);
         }
-        EntryPoint entryPoint = new EntryPoint{salt:"65516551"}();
-        IABGuardian iabGuardian = new IABGuardian{salt:"65516551"}(owner,guardianSigner,guardianSetter);
+        EntryPoint entryPoint = new EntryPoint{salt:"655165516551"}();
+        IABGuardian iabGuardian = new IABGuardian{salt:"655165516551"}(owner,guardianSigner,guardianSetter);
 
-        InsureaBagNft insureNftImpl = new InsureaBagNft{salt:"65516551"}();
-        ERC1967Proxy insureNftProxy = new ERC1967Proxy{salt:"6551"}(address(insureNftImpl), 
+        InsureaBagNft insureNftImpl = new InsureaBagNft{salt:"655165516551"}();
+        ERC1967Proxy insureNftProxy = new ERC1967Proxy{salt:"655165516551"}(address(insureNftImpl), 
                                         abi.encodeWithSelector(insureNftImpl.initialize.selector, 
-                                        "InusreABag","IAB", owner));
-        IABAccount accountImpl = new IABAccount{salt:"65516551"}(address(iabGuardian),address(entryPoint));
+                                        "InusreABag","IAB", owner, config.ethPriceFeed));
+        IABAccount accountImpl = new IABAccount{salt:"655165516551"}(address(iabGuardian),address(entryPoint));
         InsureaBagNft nftPolicy = InsureaBagNft(address(insureNftProxy));
         return (registry, entryPoint, iabGuardian, nftPolicy, accountImpl);
     }
@@ -85,17 +89,17 @@ contract DeployCreateAccount is Script, HelpersConfig {
         public
         returns (address)
     {
-        ChainConfig memory config = getConfig();
-        string memory domainName = config.domainName;
-        string memory domainVersion = config.domainVersion;
+        // ChainConfig memory config = getConfig();
+        // string memory domainName = config.domainName;
+        // string memory domainVersion = config.domainVersion;
         nftPolicy.toggleMint();
         nftPolicy.setImplementationAddress(address(accountImpl));
         nftPolicy.setRegistryAddress(address(registry));
         vm.recordLogs();
-        nftPolicy.createInsurance();
+        nftPolicy.createInsurance{value: 0.000777 ether}();
         Vm.Log[] memory entries = vm.getRecordedLogs();
         address tbAccount = abi.decode(entries[1].data, (address));
-        IABAccount account = IABAccount(payable(tbAccount));
+        // IABAccount account = IABAccount(payable(tbAccount));
         // account.setDomainSeperator(domainName, domainVersion);
         console.log(tbAccount);
         return tbAccount;

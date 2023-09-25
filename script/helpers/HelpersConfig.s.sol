@@ -8,6 +8,7 @@ contract HelpersConfig is Script {
         address contractAdmin;
         address guardianSigner;
         address guardianSetter;
+        address ethPriceFeed;
         string domainName;
         string domainVersion;
     }
@@ -36,6 +37,7 @@ contract HelpersConfig is Script {
             contractAdmin: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266,
             guardianSigner: vm.addr(2),
             guardianSetter: vm.addr(3),
+            ethPriceFeed: 0x694AA1769357215DE4FAC081bf1f309aDC325306,
             domainName: "TokenShield",
             domainVersion: "1"
         });
@@ -49,6 +51,7 @@ contract HelpersConfig is Script {
             contractAdmin: adminAddress,
             guardianSigner: guardSigner,
             guardianSetter: guardSetter,
+            ethPriceFeed: 0x694AA1769357215DE4FAC081bf1f309aDC325306,
             domainName: "TokenShield",
             domainVersion: "1"
         });

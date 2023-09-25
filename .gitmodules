@@ -24,3 +24,6 @@
 [submodule "lib/deterministic-deployment-proxy"]
 	path = lib/deterministic-deployment-proxy
 	url = https://github.com/Arachnid/deterministic-deployment-proxy
+[submodule "lib/chainlink"]
+	path = lib/chainlink
+	url = https://github.com/smartcontractkit/chainlink

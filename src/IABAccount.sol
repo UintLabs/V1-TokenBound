@@ -471,7 +471,7 @@ contract IABAccount is
             // console.log("Current Owner");
             // console.log(currentOwner);
             // console.log("Guardian addresss");
-            address _guardian = IIABGuardian(guardian).getGuardian();
+            // address _guardian = IIABGuardian(guardian).getGuardian();
             // console.log(_guardian);
             require(IIABGuardian(guardian).getGuardian() == currentOwner || owner() == currentOwner, "verify not owner");
             lastOwner = currentOwner;

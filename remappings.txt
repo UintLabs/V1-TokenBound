@@ -6,3 +6,4 @@ openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contr
 openzeppelin-contracts/=lib/openzeppelin-contracts/contracts
 openzeppelin/=lib/openzeppelin-contracts-upgradeable/contracts/
 prb-test/=lib/prb-test/src/
+@chainlink/=lib/chainlink
