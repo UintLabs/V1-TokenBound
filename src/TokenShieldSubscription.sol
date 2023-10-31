@@ -10,7 +10,7 @@ import { CountersUpgradeable } from "openzeppelin-contracts-upgradeable/utils/Co
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import { console } from "forge-std/console.sol";
 
-contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable {
+contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable {
     using CountersUpgradeable for CountersUpgradeable.Counter;
 
     /*//////////////////////////////////////////////////////////////
@@ -23,6 +23,7 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
     error InsuranceNotInitiated();
     error PriceFeedReturnsZeroOrLess();
     error NotEnoughEthSent();
+    error EthNotWithdrawnSuccessfully();
 
     /*//////////////////////////////////////////////////////////////
                                  Events
@@ -42,11 +43,14 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
     address accountImplementation;
     bool public initiatedMint;
 
-    function initialize(string memory _name, string memory _symbol, address _address, address _ethPriceFeedAddress) external initializer {
+    bytes32 public TRANSFER_ROLE = keccak256("TRANSFER_ROLE");
+
+    function initialize(string memory _name, string memory _symbol, address _address, address transferRole, address _ethPriceFeedAddress) external initializer {
         __ERC721_init(_name, _symbol);
         __AccessControl_init();
         __ReentrancyGuard_init();
         _grantRole(DEFAULT_ADMIN_ROLE, _address);
+        _grantRole(TRANSFER_ROLE, transferRole);
         ethPriceFeed = AggregatorV3Interface(_ethPriceFeedAddress);
     }
 
@@ -105,6 +109,24 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
     }
 
     /*//////////////////////////////////////////////////////////////
+                        Transfer Functions
+    //////////////////////////////////////////////////////////////*/
+
+
+
+    function transferFrom(address /**from */, address /**to */, uint256 /**tokenId */) public pure override {
+        require(false, "TokenShield: Non-Transferrable");
+    }
+
+    function safeTransferFrom(address /**from */, address /**to */, uint256 /**tokenId */) public pure override {
+        require(false, "TokenShield: Non-Transferrable");
+    }
+
+    function safeTransferFrom(address /**from */, address /**to */, uint256 /**tokenId */, bytes memory /**data */) public pure override {
+        require(false, "TokenShield: Non-Transferrable");
+    }
+
+    /*//////////////////////////////////////////////////////////////
                               Other
     //////////////////////////////////////////////////////////////*/
 
@@ -156,5 +178,12 @@ contract InsureaBag is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGu
         return
         // ERC-4906 support (metadata updates)
         interfaceId == bytes4(0x49064906) || super.supportsInterface(interfaceId);
+    }
+
+    function withdraw(address withdrawalAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        (bool success, ) = payable(withdrawalAddress).call{value:address(this).balance}("");
+        if (!success) {
+            revert EthNotWithdrawnSuccessfully();
+        }
     }
 }

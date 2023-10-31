@@ -6,7 +6,7 @@ import { Deploy } from "script/Deploy.s.sol";
 import { ERC6551Registry } from "src/registry/ERC6551Registry.sol";
 import { EntryPoint } from "src/EntryPoint.sol";
 import { IABGuardian } from "src/IABGuardian.sol";
-import { InsureaBag as InsureaBagNft } from "src/InsureaBag.sol";
+import { TokenShieldSubscription as TokenShieldNft } from "src/TokenShieldSubscription.sol";
 import { IABAccount } from "src/IABAccount.sol";
 import {MockAggregatorV3} from "src/mock/MockPriceFeeds.sol";
 import { console } from "forge-std/console.sol";
@@ -46,7 +46,7 @@ contract DeployCreateAccount is Script, HelpersConfig {
             ERC6551Registry registry,
             EntryPoint entryPoint,
             IABGuardian guardian,
-            InsureaBagNft nftPolicy,
+            TokenShieldNft nftPolicy,
             IABAccount accountImpl
         ) = deploy();
         address tbAccount = create(nftPolicy, accountImpl, registry);
@@ -55,7 +55,7 @@ contract DeployCreateAccount is Script, HelpersConfig {
         vm.stopBroadcast();
     }
 
-    function deploy() public returns (ERC6551Registry, EntryPoint, IABGuardian, InsureaBagNft, IABAccount) {
+    function deploy() public returns (ERC6551Registry, EntryPoint, IABGuardian, TokenShieldNft, IABAccount) {
         ChainConfig memory config = getConfig();
         address owner = config.contractAdmin;
         address guardianSigner = config.guardianSigner;
@@ -65,24 +65,24 @@ contract DeployCreateAccount is Script, HelpersConfig {
         if (chainId == 11_155_111) {
             registry = ERC6551Registry(0x02101dfB77FDE026414827Fdc604ddAF224F0921);
         } else {
-            registry = new ERC6551Registry{salt:"655165516551"}();
+            registry = new ERC6551Registry{salt:"6551655165516551"}();
             MockAggregatorV3 mockPriceFeed = new MockAggregatorV3();
             config.ethPriceFeed = address(mockPriceFeed);
         }
-        EntryPoint entryPoint = new EntryPoint{salt:"655165516551"}();
-        IABGuardian iabGuardian = new IABGuardian{salt:"655165516551"}(owner,guardianSigner,guardianSetter);
+        EntryPoint entryPoint = new EntryPoint{salt:"6551655165516551"}();
+        IABGuardian iabGuardian = new IABGuardian{salt:"6551655165516551"}(owner,guardianSigner,guardianSetter);
 
-        InsureaBagNft insureNftImpl = new InsureaBagNft{salt:"655165516551"}();
-        ERC1967Proxy insureNftProxy = new ERC1967Proxy{salt:"655165516551"}(address(insureNftImpl), 
+        TokenShieldNft insureNftImpl = new TokenShieldNft{salt:"6551655165516551"}();
+        ERC1967Proxy insureNftProxy = new ERC1967Proxy{salt:"6551655165516551"}(address(insureNftImpl), 
                                         abi.encodeWithSelector(insureNftImpl.initialize.selector, 
-                                        "InusreABag","IAB", owner, config.ethPriceFeed));
-        IABAccount accountImpl = new IABAccount{salt:"655165516551"}(address(iabGuardian),address(entryPoint));
-        InsureaBagNft nftPolicy = InsureaBagNft(address(insureNftProxy));
+                                        "InusreABag","IAB", owner, owner, config.ethPriceFeed));
+        IABAccount accountImpl = new IABAccount{salt:"6551655165516551"}(address(iabGuardian),address(entryPoint));
+        TokenShieldNft nftPolicy = TokenShieldNft(address(insureNftProxy));
         return (registry, entryPoint, iabGuardian, nftPolicy, accountImpl);
     }
 
     function create(
-        InsureaBagNft nftPolicy,
+        TokenShieldNft nftPolicy,
         IABAccount accountImpl,
         ERC6551Registry registry
     )
@@ -109,7 +109,7 @@ contract DeployCreateAccount is Script, HelpersConfig {
         ERC6551Registry registry,
         EntryPoint entryPoint,
         IABGuardian iabGuardian,
-        InsureaBagNft nftPolicy,
+        TokenShieldNft nftPolicy,
         IABAccount accountImpl,
         address tbAccount
     )

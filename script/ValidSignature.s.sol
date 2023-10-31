@@ -3,13 +3,12 @@ pragma solidity ^0.8.19;
 
 import { Script } from "forge-std/Script.sol";
 import { ECDSA } from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
-import { AccountGuardian } from "src/AccountGuardian.sol";
 import { IERC1271 } from "openzeppelin-contracts/interfaces/IERC1271.sol";
 import { IABAccount } from "src/IABAccount.sol";
 import { ERC6551Registry } from "src/registry/ERC6551Registry.sol";
 import { EntryPoint } from "src/EntryPoint.sol";
 import { IABGuardian } from "src/IABGuardian.sol";
-import { InsureaBag as InsureaBagNft } from "src/InsureaBag.sol";
+import { TokenShieldSubscription as TokenShieldNft } from "src/TokenShieldSubscription.sol";
 import { Deploy } from "script/Deploy.s.sol";
 import { console } from "forge-std/console.sol";
 
@@ -30,7 +29,7 @@ contract ValidSignature is Script {
         bytes data;
     }
 
-    string constant domainName = "Tokenshield";
+    string constant domainName = "TokenShield";
     string constant domainVersion = "1";
     bytes32 DOMAIN_SEPARATOR = getDomainHash(
         EIP712Domain({
