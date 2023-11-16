@@ -7,7 +7,7 @@ import { EntryPoint } from "src/EntryPoint.sol";
 import { IABGuardian } from "src/IABGuardian.sol";
 import { TokenShieldSubscription as TokenShieldNft } from "src/TokenShieldSubscription.sol";
 import { IABAccount } from "src/IABAccount.sol";
-import {MockAggregatorV3} from "src/mock/MockPriceFeeds.sol";
+import { MockAggregatorV3 } from "src/mock/MockPriceFeeds.sol";
 import { ERC1967Proxy } from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Strings } from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 import { HelpersConfig } from "script/helpers/HelpersConfig.s.sol";

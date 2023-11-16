@@ -7,7 +7,7 @@ import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/s
 import { UUPSUpgradeable } from "openzeppelin-contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { ERC721Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import { CountersUpgradeable } from "openzeppelin-contracts-upgradeable/utils/CountersUpgradeable.sol";
-import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import { console } from "forge-std/console.sol";
 
 contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable {
@@ -45,7 +45,16 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
 
     bytes32 public TRANSFER_ROLE = keccak256("TRANSFER_ROLE");
 
-    function initialize(string memory _name, string memory _symbol, address _address, address transferRole, address _ethPriceFeedAddress) external initializer {
+    function initialize(
+        string memory _name,
+        string memory _symbol,
+        address _address,
+        address transferRole,
+        address _ethPriceFeedAddress
+    )
+        external
+        initializer
+    {
         __ERC721_init(_name, _symbol);
         __AccessControl_init();
         __ReentrancyGuard_init();
@@ -97,7 +106,7 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
                            Mint Function
     //////////////////////////////////////////////////////////////*/
 
-    function createInsurance() external payable mintInitiated {
+    function createSubscription() external payable mintInitiated {
         if (msg.value < getWeiPerUsd()) {
             revert NotEnoughEthSent();
         }
@@ -112,17 +121,70 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
                         Transfer Functions
     //////////////////////////////////////////////////////////////*/
 
-
-
-    function transferFrom(address /**from */, address /**to */, uint256 /**tokenId */) public pure override {
+    function transferFrom(
+        address,
+        /**
+         * from
+         */
+        address,
+        /**
+         * to
+         */
+        uint256
+    )
+        /**
+         * tokenId
+         */
+        public
+        pure
+        override
+    {
         require(false, "TokenShield: Non-Transferrable");
     }
 
-    function safeTransferFrom(address /**from */, address /**to */, uint256 /**tokenId */) public pure override {
+    function safeTransferFrom(
+        address,
+        /**
+         * from
+         */
+        address,
+        /**
+         * to
+         */
+        uint256
+    )
+        /**
+         * tokenId
+         */
+        public
+        pure
+        override
+    {
         require(false, "TokenShield: Non-Transferrable");
     }
 
-    function safeTransferFrom(address /**from */, address /**to */, uint256 /**tokenId */, bytes memory /**data */) public pure override {
+    function safeTransferFrom(
+        address,
+        /**
+         * from
+         */
+        address,
+        /**
+         * to
+         */
+        uint256,
+        /**
+         * tokenId
+         */
+        bytes memory
+    )
+        /**
+         * data
+         */
+        public
+        pure
+        override
+    {
         require(false, "TokenShield: Non-Transferrable");
     }
 
@@ -141,25 +203,28 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
         return baseURI;
     }
 
-    function getWeiPerUsd() public view  returns (uint256 weiPerUsd) {
+    function getWeiPerUsd() public view returns (uint256 weiPerUsd) {
         uint8 decimal = ethPriceFeed.decimals();
         (
-            /* uint80 roundID */,
-            int answer,
-            /*uint startedAt*/,
-            /*uint timeStamp*/,
+            /* uint80 roundID */
+            ,
+            int256 answer,
+            /*uint startedAt*/
+            ,
+            /*uint timeStamp*/
+            ,
             /*uint80 answeredInRound*/
         ) = ethPriceFeed.latestRoundData();
         uint256 chainlinkPrice;
-        if (answer< 0 ) {
+        if (answer < 0) {
             revert PriceFeedReturnsZeroOrLess();
         } else {
             chainlinkPrice = uint256(answer);
         }
         // console.log(chainlinkPrice);
         uint256 decimalCorrection = 10 ** decimal;
-        weiPerUsd = (1 ether * decimalCorrection)/chainlinkPrice;
-        require(weiPerUsd!=0,"Cant be zero");
+        weiPerUsd = (1 ether * decimalCorrection) / chainlinkPrice;
+        require(weiPerUsd != 0, "Cant be zero");
         // console.log("Wei Per USD");
         // console.log(weiPerUsd);
     }
@@ -181,7 +246,7 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
     }
 
     function withdraw(address withdrawalAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        (bool success, ) = payable(withdrawalAddress).call{value:address(this).balance}("");
+        (bool success,) = payable(withdrawalAddress).call{ value: address(this).balance }("");
         if (!success) {
             revert EthNotWithdrawnSuccessfully();
         }

@@ -8,7 +8,7 @@ import { EntryPoint } from "src/EntryPoint.sol";
 import { IABGuardian } from "src/IABGuardian.sol";
 import { TokenShieldSubscription as TokenShieldNft } from "src/TokenShieldSubscription.sol";
 import { IABAccount } from "src/IABAccount.sol";
-import {MockAggregatorV3} from "src/mock/MockPriceFeeds.sol";
+import { MockAggregatorV3 } from "src/mock/MockPriceFeeds.sol";
 import { console } from "forge-std/console.sol";
 import { ERC1967Proxy } from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Strings } from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
@@ -96,7 +96,7 @@ contract DeployCreateAccount is Script, HelpersConfig {
         nftPolicy.setImplementationAddress(address(accountImpl));
         nftPolicy.setRegistryAddress(address(registry));
         vm.recordLogs();
-        nftPolicy.createInsurance{value: 0.000777 ether}();
+        nftPolicy.createInsurance{ value: 0.000777 ether }();
         Vm.Log[] memory entries = vm.getRecordedLogs();
         address tbAccount = abi.decode(entries[1].data, (address));
         // IABAccount account = IABAccount(payable(tbAccount));

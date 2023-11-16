@@ -21,9 +21,12 @@
 [submodule "lib/soul-wallet-contract"]
 	path = lib/soul-wallet-contract
 	url = https://github.com/proofofsoulprotocol/soul-wallet-contract
-[submodule "lib/deterministic-deployment-proxy"]
-	path = lib/deterministic-deployment-proxy
-	url = https://github.com/Arachnid/deterministic-deployment-proxy
 [submodule "lib/chainlink"]
 	path = lib/chainlink
 	url = https://github.com/smartcontractkit/chainlink
+[submodule "lib/erc6551"]
+	path = lib/erc6551
+	url = https://github.com/erc6551/reference
+[submodule "lib/tokenbound"]
+	path = lib/tokenbound
+	url = https://github.com/tokenbound/contracts

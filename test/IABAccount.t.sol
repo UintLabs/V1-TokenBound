@@ -81,7 +81,7 @@ contract IABAccountTest is Test, HelpersConfig, EIP712 {
         console.log("Staring 2nd Hoax");
         vm.startPrank(accountOwner);
         vm.deal(accountOwner, 10 ether);
-        nftPolicy.createInsurance{value: 0.000777 ether}();
+        nftPolicy.createInsurance{ value: 0.000777 ether }();
         vm.stopPrank();
         Vm.Log[] memory entries = vm.getRecordedLogs();
         address tbAccount = abi.decode(entries[1].data, (address));
