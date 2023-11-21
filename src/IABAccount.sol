@@ -77,6 +77,7 @@ contract IABAccount is
     event PermissionUpdated(address owner, address caller, bool hasPermission);
 
     event LockUpdated(uint256 lockedUntil);
+    event TransactionExecuted(address to, uint256 value, bytes data);
 
     /// @dev reverts if caller is not the owner of the account
     modifier onlyOwner() {

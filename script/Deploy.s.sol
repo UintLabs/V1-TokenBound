@@ -15,19 +15,6 @@ import { HelpersConfig } from "script/helpers/HelpersConfig.s.sol";
 contract Deploy is Script, HelpersConfig {
     using Strings for string;
 
-    struct EIP712Domain {
-        string name;
-        string version;
-        uint256 chainId;
-        address verifyingContract;
-    }
-
-    struct Tx {
-        address to;
-        uint256 value;
-        uint256 nonce;
-        bytes data;
-    }
 
     function run() external returns (ERC6551Registry, EntryPoint, IABGuardian, TokenShieldNft, IABAccount) {
         // bytes memory code = registryBytecode;

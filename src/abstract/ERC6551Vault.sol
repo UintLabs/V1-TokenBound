@@ -6,11 +6,14 @@ import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { Signatory } from "@tokenbound/abstract/Signatory.sol";
 
 import "@erc6551/lib/ERC6551AccountLib.sol";
+import {VaultSignatureVerifier} from "./VaultSignatureVerifier.sol";
 
-abstract contract ERC6551Vault is IERC6551Account, ERC165, Signatory {
+abstract contract ERC6551Vault is VaultSignatureVerifier, ERC165, Signatory {
     uint256 _state;
 
     receive() external payable virtual { }
+
+    constructor(address _guardian) VaultSignatureVerifier(_guardian) {}
 
     /**
      * @dev See: {IERC6551Account-isValidSigner}
@@ -48,7 +51,10 @@ abstract contract ERC6551Vault is IERC6551Account, ERC165, Signatory {
     /**
      * @dev Returns true if a given signer is authorized to use this account
      */
-    function _isValidSigner(address signer, bytes memory data) internal view returns (bool) {
-        
-     }
+    function _isValidSigner(address signer, bytes memory data) internal view returns (bool) { 
+        if (signer == owner()) {
+            return true;
+        }
+        return false;
+    }
 }

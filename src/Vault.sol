@@ -7,6 +7,12 @@ import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import { EIP712 } from "openzeppelin-contracts/utils/cryptography/EIP712.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import { IERC6551Account } from "src/interfaces/IERC6551Account.sol";
+import { Signatory } from "@tokenbound/abstract/Signatory.sol";
+
+// Errors
+error InvalidInput();
 
 /**
  * @title Vault Account Contract
@@ -14,25 +20,31 @@ import { EIP712 } from "openzeppelin-contracts/utils/cryptography/EIP712.sol";
  * @notice This contract is a ERC6551, ERC4337 and ERC 6900 compatible modular smart account owned with account
  * recovery.
  */
-contract Vault is ERC6551Vault, ERC4337Account, ERC721Holder, ERC1155Holder{
-    // Errors
-    error InvalidInput();
-
-    // Storage Variables
-    address immutable s_guardian;
-    address immutable s_entryPoint;
-
-    constructor(address _guardian, address _entryPoint) ERC4337Account(_entryPoint) {
-        if (_guardian == address(0) || _entryPoint == address(0)) {
-            revert InvalidInput();
-        }
-        s_guardian = _guardian;
+contract Vault is ERC6551Vault, ERC4337Account, ERC721Holder, ERC1155Holder {
+  constructor(address _guardian, address _entryPoint) ERC6551Vault(_guardian) ERC4337Account(_entryPoint) {
+    if (_guardian == address(0) || _entryPoint == address(0)) {
+      revert InvalidInput();
     }
+  }
 
-    // Internal Functions
+  // Internal Functions
 
-    /**
-     * @dev Returns true if a given signer is authorized to use this account
-     */
-    function _isValidSigner(address signer, bytes memory) internal view override returns (bool) { }
+  function _isValidSignature(
+    bytes32 hash,
+    bytes calldata signature
+  ) internal view virtual override(ERC4337Account, Signatory) returns (bool) {
+    return splitAndCheckSignature(hash, signature);
+  }
+
+  function supportsInterface(bytes4 interfaceId) public view override(ERC1155Receiver, ERC6551Vault) returns (bool) {
+    return
+      interfaceId == type(IERC6551Account).interfaceId ||
+      interfaceId == type(IERC1155Receiver).interfaceId ||
+      super.supportsInterface(interfaceId);
+  }
+
+
+  function owner() public view virtual override returns (address) {}
+
+ 
 }

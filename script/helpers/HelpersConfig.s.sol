@@ -4,6 +4,21 @@ pragma solidity ^0.8.19;
 import { Script } from "forge-std/Script.sol";
 
 contract HelpersConfig is Script {
+
+    struct EIP712Domain {
+        string name;
+        string version;
+        uint256 chainId;
+        address verifyingContract;
+    }
+
+    struct Tx {
+        address to;
+        uint256 value;
+        uint256 nonce;
+        bytes data;
+    }
+
     struct ChainConfig {
         address contractAdmin;
         address guardianSigner;
