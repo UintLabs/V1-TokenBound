@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import { IERC6551Registry } from "src/interfaces/IERC6551Registry.sol";
+import { IERC6551Registry } from "@erc6551/interfaces/IERC6551Registry.sol";
 import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "openzeppelin-contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -44,11 +44,12 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
     bool public initiatedMint;
 
     bytes32 public TRANSFER_ROLE = keccak256("TRANSFER_ROLE");
+    bytes32 public salt = keccak256("TOKENSHIELD");
 
     function initialize(
         string memory _name,
         string memory _symbol,
-        address _address,
+        address _adminAddress,
         address transferRole,
         address _ethPriceFeedAddress
     )
@@ -58,7 +59,7 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
         __ERC721_init(_name, _symbol);
         __AccessControl_init();
         __ReentrancyGuard_init();
-        _grantRole(DEFAULT_ADMIN_ROLE, _address);
+        _grantRole(DEFAULT_ADMIN_ROLE, _adminAddress);
         _grantRole(TRANSFER_ROLE, transferRole);
         ethPriceFeed = AggregatorV3Interface(_ethPriceFeedAddress);
     }
@@ -112,7 +113,7 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
         }
         _mint(msg.sender, idTracker.current());
         address account =
-            registry.createAccount(accountImplementation, block.chainid, address(this), idTracker.current(), 0, "");
+            registry.createAccount(accountImplementation, salt, block.chainid, address(this), idTracker.current());
         idTracker.increment();
         emit VaultCreated(account);
     }
@@ -194,7 +195,7 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
 
     function getTokenBoundAddress(uint256 _tokenId) external view returns (address) {
         if (_tokenId > idTracker.current()) revert NonexistentToken();
-        address account = registry.account(accountImplementation, block.chainid, address(this), _tokenId, 0);
+        address account = registry.account(accountImplementation, salt, block.chainid, address(this), _tokenId);
         return account;
     }
 

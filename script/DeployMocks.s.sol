@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import { Script } from "forge-std/Script.sol";
-import { IABAccount } from "src/IABAccount.sol";
 import { console } from "forge-std/console.sol";
 import { HelpersConfig } from "script/helpers/HelpersConfig.s.sol";
 import { MockNFT } from "src/mock/MockNFT.sol";

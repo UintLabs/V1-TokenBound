@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import { IERC6551Account } from "src/interfaces/IERC6551Account.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { Signatory } from "@tokenbound/abstract/Signatory.sol";
-
+import {IERC721} from "openzeppelin-contracts/token/ERC721/IERC721.sol";
 import "@erc6551/lib/ERC6551AccountLib.sol";
 import {VaultSignatureVerifier} from "./VaultSignatureVerifier.sol";
 
@@ -18,7 +18,7 @@ abstract contract ERC6551Vault is VaultSignatureVerifier, ERC165, Signatory {
     /**
      * @dev See: {IERC6551Account-isValidSigner}
      */
-    function isValidSigner(address signer, bytes calldata data) external view returns (bytes4 magicValue) {
+    function isValidSigner(address signer, bytes calldata data) external override view returns (bytes4 magicValue) {
         if (_isValidSigner(signer, data)) {
             return IERC6551Account.isValidSigner.selector;
         }
@@ -29,14 +29,27 @@ abstract contract ERC6551Vault is VaultSignatureVerifier, ERC165, Signatory {
     /**
      * @dev See: {IERC6551Account-token}
      */
-    function token() public view returns (uint256 chainId, address tokenContract, uint256 tokenId) {
-        return ERC6551AccountLib.token();
+    function token() public view virtual returns (uint256, address, uint256) {
+        bytes memory footer = new bytes(0x60);
+
+        assembly {
+            extcodecopy(address(), add(footer, 0x20), 0x4d, 0x60)
+        }
+
+        return abi.decode(footer, (uint256, address, uint256));
+    }
+
+    function owner() public view virtual override returns (address) {
+        (uint256 chainId, address tokenContract, uint256 tokenId) = token();
+        if (chainId != block.chainid) return address(0);
+
+        return IERC721(tokenContract).ownerOf(tokenId);
     }
 
     /**
      * @dev See: {IERC6551Account-state}
      */
-    function state() public view returns (uint256) {
+    function state() public override view returns (uint256) {
         return _state;
     }
 
