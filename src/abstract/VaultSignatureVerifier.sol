@@ -51,7 +51,7 @@ abstract contract VaultSignatureVerifier is EIP712, IERC6551Account {
 
     function splitAndCheckSignature(bytes32 dataHash, bytes memory signatures) internal view returns (bool){
         // checking if the length of the signature is correct
-        require(signatures.length >= 2 * 65, "signatures too short");
+        // require(signatures.length >= 2 * 65, "signatures too short");
 
         (bytes memory onwerSignature, bytes memory guardianSignerSignature) = signatureSplit(signatures);
         // Get the signing address for this account from the guardian Contract

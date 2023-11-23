@@ -8,7 +8,7 @@ import {IERC721} from "openzeppelin-contracts/token/ERC721/IERC721.sol";
 import "@erc6551/lib/ERC6551AccountLib.sol";
 import {VaultSignatureVerifier} from "./VaultSignatureVerifier.sol";
 
-abstract contract ERC6551Vault is VaultSignatureVerifier, ERC165, Signatory {
+abstract contract ERC6551Vault is VaultSignatureVerifier, ERC165{
     uint256 _state;
 
     receive() external payable virtual { }

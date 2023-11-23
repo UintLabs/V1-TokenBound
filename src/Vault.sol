@@ -21,28 +21,40 @@ error InvalidInput();
  * recovery.
  */
 contract Vault is ERC6551Vault, ERC4337Account, ERC721Holder, ERC1155Holder {
-  constructor(address _guardian, address _entryPoint) ERC6551Vault(_guardian) ERC4337Account(_entryPoint) {
-    if (_guardian == address(0) || _entryPoint == address(0)) {
-      revert InvalidInput();
+    constructor(address _guardian, address _entryPoint) ERC6551Vault(_guardian) ERC4337Account(_entryPoint) {
+        if (_guardian == address(0) || _entryPoint == address(0)) {
+            revert InvalidInput();
+        }
     }
-  }
 
-  // Internal Functions
+    function isValidSignature(bytes32 hash, bytes calldata signature)
+        external
+        view
+        returns (bytes4 magicValue)
+    {
+        if (_isValidSignature(hash, signature)) {
+            return IERC1271.isValidSignature.selector;
+        }
 
-  function _isValidSignature(
-    bytes32 hash,
-    bytes calldata signature
-  ) internal view virtual override(ERC4337Account, Signatory) returns (bool) {
-    return splitAndCheckSignature(hash, signature);
-  }
+        return bytes4(0);
+    }
+    // Internal Functions
 
-  function supportsInterface(bytes4 interfaceId) public view override(ERC1155Receiver, ERC6551Vault) returns (bool) {
-    return
-      interfaceId == type(IERC6551Account).interfaceId ||
-      interfaceId == type(IERC1155Receiver).interfaceId ||
-      super.supportsInterface(interfaceId);
-  }
+    function _isValidSignature(
+        bytes32 hash,
+        bytes calldata signature
+    )
+        internal
+        view
+        virtual
+        override(ERC4337Account)
+        returns (bool)
+    {
+        return splitAndCheckSignature(hash, signature);
+    }
 
-
- 
+    function supportsInterface(bytes4 interfaceId) public view override(ERC1155Receiver, ERC6551Vault) returns (bool) {
+        return interfaceId == type(IERC6551Account).interfaceId || interfaceId == type(IERC1155Receiver).interfaceId
+            || super.supportsInterface(interfaceId);
+    }
 }
