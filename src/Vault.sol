@@ -44,7 +44,5 @@ contract Vault is ERC6551Vault, ERC4337Account, ERC721Holder, ERC1155Holder {
   }
 
 
-  function owner() public view virtual override returns (address) {}
-
  
 }

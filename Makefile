@@ -12,7 +12,7 @@ isValidSig:; forge script script/ValidSignature.s.sol:ValidSignature --rpc-url=h
 
 anvil-sep:; anvil --fork-url $(SEPOLIA_RPC_URL) --fork-block-number 4742888 --fork-chain-id 31337
 
-account-test:; forge test --match-path test/IABAccount.t.sol --match-contract IABAccountTest
+signature-test:; forge test --match-path test/unit/VaultSignatureVerifier.t.sol --match-contract VaultSignatureVerifierTest
 
 test-account:; forge test --match-path test/IABAccount.t.sol --match-contract IABAccountTest
 
