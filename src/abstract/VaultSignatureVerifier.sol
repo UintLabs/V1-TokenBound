@@ -31,7 +31,7 @@ abstract contract VaultSignatureVerifier is EIP712, IERC6551Account {
 
     function owner() public view virtual returns (address);
 
-    function checkSignature(bytes memory data, address to, uint256 value, uint256 _state) internal view returns (bool isValidSig) {
+    function _checkSignature(bytes memory data, address to, uint256 value, uint256 _state) internal view returns (bool isValidSig,bytes memory txData) {
         (Tx memory transaction, bytes memory sig) = abi.decode(data, (Tx, bytes));
         if (_state != transaction.nonce) {
             revert VaultSignatureVerifier__NonceNotCorrect();
@@ -47,6 +47,7 @@ abstract contract VaultSignatureVerifier is EIP712, IERC6551Account {
         bytes32 transactionHash = getTransactionHash(transaction);
         bytes32 digest = _hashTypedDataV4(transactionHash);
         isValidSig = splitAndCheckSignature(digest, sig);
+        txData = transaction.data;
     }
 
     function splitAndCheckSignature(bytes32 dataHash, bytes memory signatures) internal view returns (bool){
