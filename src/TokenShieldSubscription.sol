@@ -7,7 +7,7 @@ import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/s
 import { UUPSUpgradeable } from "openzeppelin-contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { ERC721Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import { CountersUpgradeable } from "openzeppelin-contracts-upgradeable/utils/CountersUpgradeable.sol";
-import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import { AggregatorV3Interface } from "@chainlink/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import { console } from "forge-std/console.sol";
 
 contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable {
