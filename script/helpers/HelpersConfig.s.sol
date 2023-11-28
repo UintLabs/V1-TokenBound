@@ -4,10 +4,26 @@ pragma solidity ^0.8.19;
 import { Script } from "forge-std/Script.sol";
 
 contract HelpersConfig is Script {
+    struct EIP712Domain {
+        string name;
+        string version;
+        uint256 chainId;
+        address verifyingContract;
+    }
+
+    struct Tx {
+        address to;
+        uint256 value;
+        uint256 nonce;
+        bytes data;
+    }
+
     struct ChainConfig {
         address contractAdmin;
         address guardianSigner;
         address guardianSetter;
+        address accountRecoveryManager;
+        address ethPriceFeed;
         string domainName;
         string domainVersion;
     }
@@ -36,6 +52,8 @@ contract HelpersConfig is Script {
             contractAdmin: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266,
             guardianSigner: vm.addr(2),
             guardianSetter: vm.addr(3),
+            accountRecoveryManager: vm.addr(4),
+            ethPriceFeed: 0x694AA1769357215DE4FAC081bf1f309aDC325306,
             domainName: "TokenShield",
             domainVersion: "1"
         });
@@ -49,6 +67,8 @@ contract HelpersConfig is Script {
             contractAdmin: adminAddress,
             guardianSigner: guardSigner,
             guardianSetter: guardSetter,
+            accountRecoveryManager: vm.addr(4),
+            ethPriceFeed: 0x694AA1769357215DE4FAC081bf1f309aDC325306,
             domainName: "TokenShield",
             domainVersion: "1"
         });

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import { Script } from "forge-std/Script.sol";
-import { IABAccount } from "src/IABAccount.sol";
 import { console } from "forge-std/console.sol";
 import { HelpersConfig } from "script/helpers/HelpersConfig.s.sol";
 import { MockNFT } from "src/mock/MockNFT.sol";
@@ -18,7 +17,7 @@ contract DeployERC721 is Script, HelpersConfig {
             privateKey = vm.envUint("PRIVATE_KEY");
         }
 
-        address addressToMint = 0x74543780D09D7E152e8025da5893D7AAB1365950;
+        address addressToMint = 0xB721347D2938a5594a12DF5Cc36D598b839Cb98f;
         vm.startBroadcast(privateKey);
         MockNFT nft = new MockNFT();
         nft.safeMint(addressToMint, 1);
