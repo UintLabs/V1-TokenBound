@@ -3,8 +3,8 @@ pragma solidity ^0.8.19;
 
 import "account-abstraction/interfaces/UserOperation.sol";
 // Errors
-error InvalidInput();
 
+error InvalidInput();
 
 /**
  * @title Vault Account Contract
@@ -13,8 +13,6 @@ error InvalidInput();
  * recovery.
  */
 interface IVault {
-    
-
     function token() external view returns (uint256, address, uint256);
 
     /**

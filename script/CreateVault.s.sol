@@ -47,7 +47,7 @@ contract CreateVault is Script, HelpersConfig, FileHelpers {
         createdVault = _createVault(tokenShieldNft);
     }
 
-    function _createVault(TokenShieldNft tokenShieldNft) internal  returns (address createdVault) {
+    function _createVault(TokenShieldNft tokenShieldNft) internal returns (address createdVault) {
         vm.recordLogs();
         tokenShieldNft.createSubscription{ value: 0.0012 ether }();
         Vm.Log[] memory entries = vm.getRecordedLogs();

@@ -9,7 +9,6 @@ import "@erc6551/lib/ERC6551AccountLib.sol";
 import { VaultSignatureVerifier } from "./VaultSignatureVerifier.sol";
 import { ERC6551Executor } from "./execution/ERC6551Executor.sol";
 
-
 error ERC6551Vault__SigInvalid();
 
 abstract contract ERC6551Vault is VaultSignatureVerifier, ERC6551Executor, ERC165 {
@@ -75,7 +74,7 @@ abstract contract ERC6551Vault is VaultSignatureVerifier, ERC6551Executor, ERC16
         return false;
     }
 
-    function beforeExecute() internal override  returns (uint256) {
+    function beforeExecute() internal override returns (uint256) {
         uint256 currentState = _state;
         _incrementState();
         return currentState;
@@ -89,11 +88,12 @@ abstract contract ERC6551Vault is VaultSignatureVerifier, ERC6551Executor, ERC16
         public
         view
         override
-        returns (bool isValidSig, bytes memory txData){
-            uint256 currentState = _state;
-            (isValidSig, txData) = _checkSignature(data, to, value, currentState);
-            if (!isValidSig) {
-                revert ERC6551Vault__SigInvalid();
-            }
+        returns (bool isValidSig, bytes memory txData)
+    {
+        uint256 currentState = _state;
+        (isValidSig, txData) = _checkSignature(data, to, value, currentState);
+        if (!isValidSig) {
+            revert ERC6551Vault__SigInvalid();
         }
+    }
 }
