@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import { AutomationCompatibleInterface as IAutomationCompatibleInterface } from
     "@chainlink/src/v0.8/automation/interfaces/AutomationCompatibleInterface.sol";
+import {} from "@chainlink/src/v0.8/automation/interfaces/2_0/AutomationRegistryInterface2_0.sol";
 
 error RecoveryManager__NotTokenShieldNft();
 error RecoveryManager__AddressCantBeZero();
