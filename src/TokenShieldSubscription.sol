@@ -8,7 +8,8 @@ import { UUPSUpgradeable } from "openzeppelin-contracts-upgradeable/proxy/utils/
 import { ERC721Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import { CountersUpgradeable } from "openzeppelin-contracts-upgradeable/utils/CountersUpgradeable.sol";
 import { AggregatorV3Interface } from "@chainlink/src/v0.8/interfaces/AggregatorV3Interface.sol";
-import { console } from "forge-std/console.sol";
+import { IRecoveryManager } from "src/interfaces/IRecoveryManager.sol";
+// import { console } from "forge-std/console.sol";
 
 contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable {
     using CountersUpgradeable for CountersUpgradeable.Counter;
@@ -24,12 +25,17 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
     error PriceFeedReturnsZeroOrLess();
     error NotEnoughEthSent();
     error EthNotWithdrawnSuccessfully();
+    error TokenShield__NotGuardian();
+    error TokenShield__NotOwner();
+    error TokenShield__OwnerCantBeTrustee();
 
     /*//////////////////////////////////////////////////////////////
                                  Events
     //////////////////////////////////////////////////////////////*/
 
     event VaultCreated(address indexed account);
+    event RecoverySet(uint256 indexed tokenId);
+    event RecoveryProcessStarted(uint256 indexed tokenId, address indexed upKeepForwarder, uint256 indexed upkeepId);
 
     /*//////////////////////////////////////////////////////////////
                                  State Vars
@@ -38,6 +44,7 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
     CountersUpgradeable.Counter idTracker;
     IERC6551Registry registry;
     AggregatorV3Interface internal ethPriceFeed;
+    IRecoveryManager internal recoveryManager;
 
     string baseURI;
     address accountImplementation;
@@ -45,6 +52,8 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
 
     bytes32 public TRANSFER_ROLE = keccak256("TRANSFER_ROLE");
     bytes32 public salt = keccak256("TOKENSHIELD");
+
+    mapping(uint256 tokenId => address trustee) public tokenIdToTrustee;
 
     function initialize(
         string memory _name,
@@ -62,6 +71,7 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
         _grantRole(DEFAULT_ADMIN_ROLE, _adminAddress);
         _grantRole(TRANSFER_ROLE, transferRole);
         ethPriceFeed = AggregatorV3Interface(_ethPriceFeedAddress);
+        recoveryManager = IRecoveryManager(transferRole);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -117,6 +127,36 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
         idTracker.increment();
         emit VaultCreated(account);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                           Mint Function
+    //////////////////////////////////////////////////////////////*/
+
+    function setRecovery(uint256 tokenId, address trustee) external {
+        _requireMinted(tokenId);
+        if (_ownerOf(tokenId) != msg.sender) {
+            revert TokenShield__NotOwner();
+        }
+        if (trustee == msg.sender) {
+            revert TokenShield__OwnerCantBeTrustee();
+        }
+        tokenIdToTrustee[tokenId] = trustee;
+        recoveryManager.setRecovery(trustee, tokenId);
+        emit RecoverySet(tokenId);
+    }
+
+    function startRecovery(uint256 tokenId) external {
+        address trustee = tokenIdToTrustee[tokenId];
+        if (trustee != msg.sender) {
+            revert TokenShield__NotGuardian();
+        }
+        (address upkeepForwarder, uint256 upkeepId) = recoveryManager.startRecovery(tokenId, trustee);
+        emit RecoveryProcessStarted(tokenId, upkeepForwarder, upkeepId);
+    }
+
+    function stopRecovery() external { }
+
+    function completeRecovery() external onlyRole(TRANSFER_ROLE) { }
 
     /*//////////////////////////////////////////////////////////////
                         Transfer Functions

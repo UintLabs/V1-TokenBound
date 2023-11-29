@@ -27,11 +27,7 @@ contract Vault is ERC6551Vault, ERC4337Account, ERC721Holder, ERC1155Holder {
         }
     }
 
-    function isValidSignature(bytes32 hash, bytes calldata signature)
-        external
-        view
-        returns (bytes4 magicValue)
-    {
+    function isValidSignature(bytes32 hash, bytes calldata signature) external view returns (bytes4 magicValue) {
         if (_isValidSignature(hash, signature)) {
             return IERC1271.isValidSignature.selector;
         }

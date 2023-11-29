@@ -31,7 +31,16 @@ abstract contract VaultSignatureVerifier is EIP712, IERC6551Account {
 
     function owner() public view virtual returns (address);
 
-    function _checkSignature(bytes memory data, address to, uint256 value, uint256 _state) internal view returns (bool isValidSig,bytes memory txData) {
+    function _checkSignature(
+        bytes memory data,
+        address to,
+        uint256 value,
+        uint256 _state
+    )
+        internal
+        view
+        returns (bool isValidSig, bytes memory txData)
+    {
         (Tx memory transaction, bytes memory sig) = abi.decode(data, (Tx, bytes));
         if (_state != transaction.nonce) {
             revert VaultSignatureVerifier__NonceNotCorrect();
@@ -50,7 +59,7 @@ abstract contract VaultSignatureVerifier is EIP712, IERC6551Account {
         txData = transaction.data;
     }
 
-    function splitAndCheckSignature(bytes32 dataHash, bytes memory signatures) internal view returns (bool){
+    function splitAndCheckSignature(bytes32 dataHash, bytes memory signatures) internal view returns (bool) {
         // checking if the length of the signature is correct
         // require(signatures.length >= 2 * 65, "signatures too short");
 
@@ -65,7 +74,6 @@ abstract contract VaultSignatureVerifier is EIP712, IERC6551Account {
             return true;
         }
         return false;
-        
     }
 
     function getTransactionHash(Tx memory _transaction) internal pure returns (bytes32) {
@@ -95,6 +103,6 @@ abstract contract VaultSignatureVerifier is EIP712, IERC6551Account {
         guardianSignerSignature = abi.encodePacked(r2, s2, v2);
     }
 
-    function isValidSigner(address signer, bytes calldata context) external virtual view returns (bytes4 magicValue);
-    function state() external virtual view returns (uint256);
+    function isValidSigner(address signer, bytes calldata context) external view virtual returns (bytes4 magicValue);
+    function state() external view virtual returns (uint256);
 }

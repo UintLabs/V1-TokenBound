@@ -4,12 +4,11 @@ pragma solidity ^0.8.19;
 import { Test } from "forge-std/Test.sol";
 import { Vault } from "src/Vault.sol";
 import { TokenShieldSubscription as TokenShieldNft } from "src/TokenShieldSubscription.sol";
-import {MockNFT} from "src/mock/MockNFT.sol";
+import { MockNFT } from "src/mock/MockNFT.sol";
 import { CreateVault } from "script/CreateVault.s.sol";
 import { DeployVault } from "script/DeployVault.s.sol";
 import { HelpersConfig } from "script/helpers/HelpersConfig.s.sol";
 import { ERC6551Registry } from "@erc6551/ERC6551Registry.sol";
-
 
 error NotAuthorizedExecutor();
 error Executor__OnlyCallOpAllowed();
@@ -86,7 +85,7 @@ contract ERC6551ExecutorTest is Test, HelpersConfig, CreateVault {
         bytes memory signature = abi.encode(v1, r1, s1, v2, r2, s2);
 
         bytes memory data = abi.encode(transaction, signature);
-        (bool isValid, ) = vault.checkSignature(data, nonMinter, 1 ether);
+        (bool isValid,) = vault.checkSignature(data, nonMinter, 1 ether);
 
         assertEq(isValid, true);
     }
@@ -107,11 +106,10 @@ contract ERC6551ExecutorTest is Test, HelpersConfig, CreateVault {
 
         bytes memory data = abi.encode(transaction, signature);
         vm.expectRevert(NotAuthorizedExecutor.selector);
-        vault.execute(nonMinter,1 ether,data, 0);
+        vault.execute(nonMinter, 1 ether, data, 0);
+    }
 
-     }
-
-     function testRevertsWhenOpNotCall() public mintVault {
+    function testRevertsWhenOpNotCall() public mintVault {
         uint256 state = vault.state();
         Tx memory transaction = Tx({ to: nonMinter, value: 1 ether, nonce: state, data: "" });
         bytes32 transactionHash = getTransactionHash(transaction);
@@ -128,11 +126,10 @@ contract ERC6551ExecutorTest is Test, HelpersConfig, CreateVault {
         bytes memory data = abi.encode(transaction, signature);
         hoax(vaultMinter, 10 ether);
         vm.expectRevert(Executor__OnlyCallOpAllowed.selector);
-        vault.execute(nonMinter,1 ether,data, 1);
+        vault.execute(nonMinter, 1 ether, data, 1);
+    }
 
-     }
-
-    function testSendEther()  public mintVault {
+    function testSendEther() public mintVault {
         uint256 state = vault.state();
         Tx memory transaction = Tx({ to: nonMinter, value: 1 ether, nonce: state, data: "" });
         bytes32 transactionHash = getTransactionHash(transaction);
@@ -147,11 +144,11 @@ contract ERC6551ExecutorTest is Test, HelpersConfig, CreateVault {
         bytes memory signature = abi.encode(v1, r1, s1, v2, r2, s2);
 
         bytes memory data = abi.encode(transaction, signature);
-        uint priorBalance = nonMinter.balance;
+        uint256 priorBalance = nonMinter.balance;
         vm.deal(address(vault), 100 ether);
         hoax(vaultMinter, 10 ether);
-        vault.execute(nonMinter,1 ether,data, 0);
-        uint postBalance = nonMinter.balance;
+        vault.execute(nonMinter, 1 ether, data, 0);
+        uint256 postBalance = nonMinter.balance;
 
         assertEq(postBalance, priorBalance + 1 ether);
     }
@@ -162,13 +159,13 @@ contract ERC6551ExecutorTest is Test, HelpersConfig, CreateVault {
         _;
     }
 
-    function testSendERC721()  public mintVault nftDeploy {
+    function testSendERC721() public mintVault nftDeploy {
         uint256 state = vault.state();
         bytes memory message =
             abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", address(vault), nonMinter, 1);
-        
+
         Tx memory transaction = Tx({ to: address(nft), value: 0, nonce: state, data: message });
-        
+
         bytes32 transactionHash = getTransactionHash(transaction);
         bytes32 digest = getTransactionHashWithDomainSeperator(transactionHash, address(vault));
 
@@ -181,18 +178,17 @@ contract ERC6551ExecutorTest is Test, HelpersConfig, CreateVault {
         bytes memory signature = abi.encode(v1, r1, s1, v2, r2, s2);
 
         bytes memory data = abi.encode(transaction, signature);
-        
+
         address priorOwnerOfNft = nft.ownerOf(1);
 
         vm.deal(address(vault), 100 ether);
         hoax(vaultMinter, 10 ether);
         vault.execute(address(nft), 0, data, 0);
-        
+
         address postOwnerOfNft = nft.ownerOf(1);
 
         assertEq(priorOwnerOfNft, address(vault));
         assertEq(postOwnerOfNft, nonMinter);
-
     }
 
     function domainSeparator(address verifyingContract) internal view returns (bytes32 domainSeperator) {

@@ -5,7 +5,6 @@ error NotAuthorizedExecutor();
 error Executor__OnlyCallOpAllowed();
 error Executor__NotValidSig();
 
-
 abstract contract ERC6551Executor {
     uint8 constant OP_CALL = 0;
     /**
@@ -70,7 +69,8 @@ abstract contract ERC6551Executor {
         public
         view
         virtual
-        returns (bool isValidSig, bytes memory txData){
-            return (false, "");
-        }
+        returns (bool isValidSig, bytes memory txData)
+    {
+        return (false, "");
+    }
 }

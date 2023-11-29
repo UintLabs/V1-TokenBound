@@ -14,7 +14,7 @@ import { ERC1967Proxy } from "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.
 contract DeployVault is Script, HelpersConfig, FileHelpers {
     address entryPoint = address(6);
 
-    function run() external returns (address,address,address,address) {
+    function run() external returns (address, address, address, address) {
         uint256 privateKey;
         if (chainId == 11_155_111) {
             privateKey = vm.envUint("SEPOLIA_PRIVATE_KEY");

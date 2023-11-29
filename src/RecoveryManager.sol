@@ -4,7 +4,8 @@ pragma solidity ^0.8.19;
 import { AutomationCompatibleInterface as IAutomationCompatibleInterface } from
     "@chainlink/src/v0.8/automation/interfaces/AutomationCompatibleInterface.sol";
 import { IKeeperRegistryMaster } from "@chainlink/src/v0.8/automation/interfaces/v2_1/IKeeperRegistryMaster.sol";
-import "";
+// import "";
+
 error RecoveryManager__NotTokenShieldNft();
 error RecoveryManager__AddressCantBeZero();
 error RecoveryManager__RecoveryAlreadySet();
@@ -29,7 +30,7 @@ contract RecoveryManager is IAutomationCompatibleInterface {
     }
 
     address public s_tokenShieldAddress;
-    TokenShieldNft private s_tokenShield;
+    // TokenShieldNft private s_tokenShield;
 
     mapping(uint256 => RecoveryConfig) tokenIdToRecoveryConfig;
     IKeeperRegistryMaster private s_automationRegistry;
@@ -78,7 +79,10 @@ contract RecoveryManager is IAutomationCompatibleInterface {
         tokenIdToRecoveryConfig[tokenId] = recoveryConfig;
     }
 
-    function startRecovery(uint256 tokenId, address _toAddress)
+    function startRecovery(
+        uint256 tokenId,
+        address _toAddress
+    )
         external
         onlyTokenShield
         returns (address upkeepForwarder, uint256 upkeepId)
@@ -134,7 +138,7 @@ contract RecoveryManager is IAutomationCompatibleInterface {
         }
     }
 
-    function performUpkeep(bytes calldata performData) external override { 
+    function performUpkeep(bytes calldata performData) external override {
         (bool upkeepNeeded,) = checkUpkeep(performData);
         if (!upkeepNeeded) {
             revert RecoveryManager__RecoveryPeriodNotOver();
@@ -142,7 +146,6 @@ contract RecoveryManager is IAutomationCompatibleInterface {
         (uint256 tokenId) = abi.decode(performData, (uint256));
         RecoveryConfig memory recoveryConfig = tokenIdToRecoveryConfig[tokenId];
         recoveryConfig.isRecoveryPeriod = false;
-        
     }
 
     // Getter Functions
