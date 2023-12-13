@@ -37,6 +37,8 @@ interface IRecoveryManager is IAutomationCompatibleInterface {
         external
         returns (address upkeepForwarder, uint256 upkeepId);
 
+    function stopRecovery(uint256 tokenId, bytes calldata tokenShieldSig) external returns (bool);
+
     function checkUpkeep(bytes calldata checkData)
         external
         view

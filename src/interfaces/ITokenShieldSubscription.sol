@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-interface TokenShieldSubscription {
+interface ITokenShieldSubscription {
     /*//////////////////////////////////////////////////////////////
                                  Errors
     //////////////////////////////////////////////////////////////*/
@@ -63,7 +63,7 @@ interface TokenShieldSubscription {
 
     function stopRecovery() external;
 
-    function completeRecovery() external;
+    function completeRecovery(address _toAddress, uint256 tokenId)  external;
 
     /*//////////////////////////////////////////////////////////////
                         Transfer Functions

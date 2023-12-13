@@ -4,7 +4,9 @@ pragma solidity ^0.8.19;
 import { AutomationCompatibleInterface as IAutomationCompatibleInterface } from
     "@chainlink/src/v0.8/automation/interfaces/AutomationCompatibleInterface.sol";
 import { IKeeperRegistryMaster } from "@chainlink/src/v0.8/automation/interfaces/v2_1/IKeeperRegistryMaster.sol";
-// import "";
+import { ITokenShieldSubscription } from "./interfaces/ITokenShieldSubscription.sol";
+import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import { ITokenShieldGuardian as TokenGuardian } from "src/interfaces/ITokenShieldGuardian.sol";
 
 error RecoveryManager__NotTokenShieldNft();
 error RecoveryManager__AddressCantBeZero();
@@ -15,6 +17,8 @@ error RecoveryManager__OnlyForwarder();
 error RecoveryManager__AddressesCantBeSame();
 error RecoveryManager__RecoveryOrUpkeepNotSet();
 error RecoveryManager__RecoveryPeriodNotOver();
+error RecoveryManager__RecoveryTimeCompleted();
+error RecoveryManager__SignatureNotVerified();
 
 contract RecoveryManager is IAutomationCompatibleInterface {
     struct RecoveryConfig {
@@ -29,22 +33,24 @@ contract RecoveryManager is IAutomationCompatibleInterface {
         bool isRecoveryPeriod;
     }
 
-    address public s_tokenShieldAddress;
+    ITokenShieldSubscription private s_tokenShieldAddress;
+    TokenGuardian private s_guardian;
     // TokenShieldNft private s_tokenShield;
 
-    mapping(uint256 => RecoveryConfig) tokenIdToRecoveryConfig;
+    mapping(uint256 => RecoveryConfig) private tokenIdToRecoveryConfig;
     IKeeperRegistryMaster private s_automationRegistry;
 
-    constructor(address _tokenShieldNft, address _automationRegistry) {
+    constructor(address _tokenShieldNft, address _automationRegistry, address _guardian) {
         if (_tokenShieldNft == _automationRegistry) {
             revert RecoveryManager__AddressesCantBeSame();
         }
-        s_tokenShieldAddress = _tokenShieldNft;
+        s_tokenShieldAddress = ITokenShieldSubscription(_tokenShieldNft);
         s_automationRegistry = IKeeperRegistryMaster(_automationRegistry);
+        s_guardian = TokenGuardian(_guardian);
     }
 
     modifier onlyTokenShield() {
-        if (msg.sender != s_tokenShieldAddress) {
+        if (msg.sender != address(s_tokenShieldAddress)) {
             revert RecoveryManager__NotTokenShieldNft();
         }
         _;
@@ -87,7 +93,7 @@ contract RecoveryManager is IAutomationCompatibleInterface {
         onlyTokenShield
         returns (address upkeepForwarder, uint256 upkeepId)
     {
-        RecoveryConfig memory recoveryConfig = tokenIdToRecoveryConfig[tokenId];
+        RecoveryConfig memory recoveryConfig = getRecoveryConfig(tokenId);
 
         if (!recoveryConfig.isRecoverySet) {
             revert RecoveryManager__RecoveryNotSet();
@@ -117,6 +123,31 @@ contract RecoveryManager is IAutomationCompatibleInterface {
         tokenIdToRecoveryConfig[tokenId] = recoveryConfig;
     }
 
+    function stopRecovery(uint256 tokenId, bytes calldata tokenShieldSig) external {
+        RecoveryConfig memory recoveryConfig = getRecoveryConfig(tokenId);
+
+        if (!recoveryConfig.isRecoverySet) {
+            revert RecoveryManager__RecoveryNotSet();
+        }
+        if (recoveryConfig.trustee == address(0)) {
+            revert RecoveryManager__AddressCantBeZero();
+        }
+        if (block.timestamp >= recoveryConfig.recoveryEndTimestamp) {
+            revert RecoveryManager__RecoveryTimeCompleted();
+        }
+
+        bytes32 digest = keccak256(abi.encode(tokenId, recoveryConfig.recoveryEndTimestamp));
+        address guardianSigner = s_guardian.getGuardian();
+
+        bool isTokenShieldVerified = SignatureChecker.isValidSignatureNow(guardianSigner, digest, tokenShieldSig);
+        if (!isTokenShieldVerified) {
+            revert RecoveryManager__SignatureNotVerified();
+        }
+        recoveryConfig.isRecoveryPeriod = false;
+        tokenIdToRecoveryConfig[tokenId] = recoveryConfig;
+        s_automationRegistry.pauseUpkeep(recoveryConfig.upkeepId);
+    }
+
     function checkUpkeep(bytes calldata checkData)
         public
         view
@@ -124,11 +155,11 @@ contract RecoveryManager is IAutomationCompatibleInterface {
         returns (bool upkeepNeeded, bytes memory performData)
     {
         (uint256 tokenId) = abi.decode(checkData, (uint256));
-        RecoveryConfig memory recoveryConfig = tokenIdToRecoveryConfig[tokenId];
+        RecoveryConfig memory recoveryConfig = getRecoveryConfig(tokenId);
         if (recoveryConfig.upkeepForwarder != msg.sender) {
             revert RecoveryManager__OnlyForwarder();
         }
-        if (recoveryConfig.isRecoverySet || recoveryConfig.isUpkeepSet) {
+        if (recoveryConfig.isRecoverySet && recoveryConfig.isUpkeepSet) {
             revert RecoveryManager__RecoveryOrUpkeepNotSet();
         }
         if (recoveryConfig.isRecoveryPeriod && recoveryConfig.recoveryEndTimestamp <= block.timestamp) {
@@ -144,8 +175,10 @@ contract RecoveryManager is IAutomationCompatibleInterface {
             revert RecoveryManager__RecoveryPeriodNotOver();
         }
         (uint256 tokenId) = abi.decode(performData, (uint256));
-        RecoveryConfig memory recoveryConfig = tokenIdToRecoveryConfig[tokenId];
+        RecoveryConfig memory recoveryConfig = getRecoveryConfig(tokenId);
         recoveryConfig.isRecoveryPeriod = false;
+        tokenIdToRecoveryConfig[tokenId] = recoveryConfig;
+        s_tokenShieldAddress.completeRecovery(recoveryConfig.toAddress, tokenId);
     }
 
     // Getter Functions
@@ -153,7 +186,7 @@ contract RecoveryManager is IAutomationCompatibleInterface {
         return address(s_automationRegistry);
     }
 
-    function getRecoveryConfig(uint256 tokenId) external view returns (RecoveryConfig memory) {
+    function getRecoveryConfig(uint256 tokenId) public view returns (RecoveryConfig memory) {
         return tokenIdToRecoveryConfig[tokenId];
     }
 }

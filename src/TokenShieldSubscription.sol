@@ -36,6 +36,7 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
     event VaultCreated(address indexed account);
     event RecoverySet(uint256 indexed tokenId);
     event RecoveryProcessStarted(uint256 indexed tokenId, address indexed upKeepForwarder, uint256 indexed upkeepId);
+    event RecoveryStopped(uint256 indexed tokendId);
 
     /*//////////////////////////////////////////////////////////////
                                  State Vars
@@ -154,9 +155,19 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
         emit RecoveryProcessStarted(tokenId, upkeepForwarder, upkeepId);
     }
 
-    function stopRecovery() external { }
+    function stopRecovery(uint256 tokenId, bytes calldata tokenShieldSig) external {
+        _requireMinted(tokenId);
+        if (_ownerOf(tokenId) != msg.sender) {
+            revert TokenShield__NotOwner();
+        }
+        recoveryManager.stopRecovery(tokenId, tokenShieldSig);
+        emit RecoveryStopped(tokenId);
+    }
 
-    function completeRecovery() external onlyRole(TRANSFER_ROLE) { }
+    function completeRecovery(address _toAddress, uint256 tokenId) external onlyRole(TRANSFER_ROLE) {
+        address fromAddress = _ownerOf(tokenId);
+        _safeTransfer(fromAddress, _toAddress, tokenId, "");
+    }
 
     /*//////////////////////////////////////////////////////////////
                         Transfer Functions
