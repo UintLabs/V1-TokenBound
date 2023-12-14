@@ -5,7 +5,7 @@ import { Script } from "forge-std/Script.sol";
 import { HelpersConfig } from "script/helpers/HelpersConfig.s.sol";
 import { FileHelpers } from "script/helpers/FileHelpers.s.sol";
 import { ERC6551Registry } from "@erc6551/ERC6551Registry.sol";
-import { IABGuardian as Guardian } from "src/IABGuardian.sol";
+import { TokenShieldGuardian as Guardian } from "src/TokenShieldGuardian.sol";
 import { TokenShieldSubscription as TokenShieldNft } from "src/TokenShieldSubscription.sol";
 import { Vault } from "src/Vault.sol";
 import { MockAggregatorV3 } from "src/mock/MockPriceFeeds.sol";

@@ -5,9 +5,10 @@ import { Script } from "forge-std/Script.sol";
 import { HelpersConfig } from "script/helpers/HelpersConfig.s.sol";
 import { FileHelpers } from "script/helpers/FileHelpers.s.sol";
 import { ERC6551Registry } from "@erc6551/ERC6551Registry.sol";
-import { IABGuardian as Guardian } from "src/IABGuardian.sol";
+import { TokenShieldGuardian as Guardian } from "src/TokenShieldGuardian.sol";
 import { TokenShieldSubscription as TokenShieldNft } from "src/TokenShieldSubscription.sol";
 import { Vault } from "src/Vault.sol";
+import { RecoveryManager } from "src/RecoveryManager.sol";
 import { MockAggregatorV3 } from "src/mock/MockPriceFeeds.sol";
 import { ERC1967Proxy } from "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
@@ -40,18 +41,28 @@ contract DeployVault is Script, HelpersConfig, FileHelpers {
         if (chainId == 11_155_111) {
             registry = ERC6551Registry(0x000000006551c19487814612e58FE06813775758);
         } else {
-            registry = new ERC6551Registry{salt:"655165516551"}();
+            registry = new ERC6551Registry{ salt: "655165516551" }();
             MockAggregatorV3 mockPriceFeed = new MockAggregatorV3();
             config.ethPriceFeed = address(mockPriceFeed);
         }
-        Guardian guardian = new Guardian{salt:"655165516551"}(admin,guardianSigner,guardianSetter);
+        Guardian guardian = new Guardian{ salt: "655165516551" }(admin, guardianSigner, guardianSetter);
 
-        TokenShieldNft tokenShieldNftImpl = new TokenShieldNft{salt:"655165516551"}();
-        ERC1967Proxy tokenShieldNftProxy = new ERC1967Proxy{salt:"655165516551"}(address(tokenShieldNftImpl), 
-                                        abi.encodeWithSelector(tokenShieldNftImpl.initialize.selector, 
-                                            "TokenShield","TSD", admin, accountRecoveryManager, config.ethPriceFeed));
-        Vault vaultImpl = new Vault{salt:"655165516551"}(address(guardian),address(entryPoint));
+        TokenShieldNft tokenShieldNftImpl = new TokenShieldNft{ salt: "655165516551" }();
+        ERC1967Proxy tokenShieldNftProxy = new ERC1967Proxy{ salt: "655165516551" }(
+            address(tokenShieldNftImpl),
+            abi.encodeWithSelector(
+                tokenShieldNftImpl.initialize.selector,
+                "TokenShield",
+                "TSD",
+                admin,
+                accountRecoveryManager,
+                config.ethPriceFeed
+            )
+        );
+        Vault vaultImpl = new Vault{ salt: "655165516551" }(address(guardian), address(entryPoint));
         TokenShieldNft tokenShieldNft = TokenShieldNft(address(tokenShieldNftProxy));
+        RecoveryManager recoveryManager =
+            new RecoveryManager{ salt: "655165516551" }(address(tokenShieldNftProxy), address(0), address(guardian));
         return (address(registry), address(guardian), address(tokenShieldNft), address(vaultImpl));
     }
 }
