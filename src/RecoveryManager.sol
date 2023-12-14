@@ -57,7 +57,7 @@ contract RecoveryManager is IAutomationCompatibleInterface {
     }
 
     modifier noZeroAddress(address _addressToBeNonZero) {
-        if (_addressToBeNonZero != address(0)) {
+        if (_addressToBeNonZero == address(0)) {
             revert RecoveryManager__AddressCantBeZero();
         }
         _;

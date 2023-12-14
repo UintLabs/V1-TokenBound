@@ -63,7 +63,7 @@ interface ITokenShieldSubscription {
 
     function stopRecovery() external;
 
-    function completeRecovery(address _toAddress, uint256 tokenId)  external;
+    function completeRecovery(address _toAddress, uint256 tokenId) external;
 
     /*//////////////////////////////////////////////////////////////
                         Transfer Functions

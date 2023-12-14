@@ -15,7 +15,7 @@ import { ERC1967Proxy } from "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.
 contract DeployVault is Script, HelpersConfig, FileHelpers {
     address entryPoint = address(6);
 
-    function run() external returns (address, address, address, address) {
+    function run() external returns (address, address, address, address, address) {
         uint256 privateKey;
         if (chainId == 11_155_111) {
             privateKey = vm.envUint("SEPOLIA_PRIVATE_KEY");
@@ -23,19 +23,18 @@ contract DeployVault is Script, HelpersConfig, FileHelpers {
             privateKey = vm.envUint("PRIVATE_KEY");
         }
         vm.startBroadcast(privateKey);
-        (address registry, address guardian, address tokenShieldNft, address vaultImpl) = deploy();
+        (address registry, address guardian, address tokenShieldNft, address vaultImpl, address recoveryManager) = deploy();
         vm.stopBroadcast();
         writeLatestFile(registry, guardian, tokenShieldNft, vaultImpl);
-        return (registry, guardian, tokenShieldNft, vaultImpl);
+        return (registry, guardian, tokenShieldNft, vaultImpl, recoveryManager);
     }
 
-    function deploy() public returns (address, address, address, address) {
+    function deploy() public returns (address, address, address, address, address) {
         // Getting the appropriate config for the chain
         ChainConfig memory config = getConfig();
         address admin = config.contractAdmin;
         address guardianSigner = config.guardianSigner;
         address guardianSetter = config.guardianSetter;
-        address accountRecoveryManager = config.accountRecoveryManager;
 
         ERC6551Registry registry;
         if (chainId == 11_155_111) {
@@ -55,7 +54,6 @@ contract DeployVault is Script, HelpersConfig, FileHelpers {
                 "TokenShield",
                 "TSD",
                 admin,
-                accountRecoveryManager,
                 config.ethPriceFeed
             )
         );
@@ -63,6 +61,6 @@ contract DeployVault is Script, HelpersConfig, FileHelpers {
         TokenShieldNft tokenShieldNft = TokenShieldNft(address(tokenShieldNftProxy));
         RecoveryManager recoveryManager =
             new RecoveryManager{ salt: "655165516551" }(address(tokenShieldNftProxy), address(0), address(guardian));
-        return (address(registry), address(guardian), address(tokenShieldNft), address(vaultImpl));
+        return (address(registry), address(guardian), address(tokenShieldNft), address(vaultImpl), address(recoveryManager));
     }
 }

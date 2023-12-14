@@ -60,7 +60,6 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
         string memory _name,
         string memory _symbol,
         address _adminAddress,
-        address transferRole,
         address _ethPriceFeedAddress
     )
         external
@@ -70,9 +69,8 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
         __AccessControl_init();
         __ReentrancyGuard_init();
         _grantRole(DEFAULT_ADMIN_ROLE, _adminAddress);
-        _grantRole(TRANSFER_ROLE, transferRole);
+
         ethPriceFeed = AggregatorV3Interface(_ethPriceFeedAddress);
-        recoveryManager = IRecoveryManager(transferRole);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -95,6 +93,15 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
 
     function setRegistryAddress(address _address) external onlyRole(DEFAULT_ADMIN_ROLE) notZeroAddress(_address) {
         registry = IERC6551Registry(_address);
+    }
+
+    function setRecoveryManager(address _recoveryManager)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        notZeroAddress(_recoveryManager)
+    {
+        recoveryManager = IRecoveryManager(_recoveryManager);
+        _grantRole(TRANSFER_ROLE, _recoveryManager);
     }
 
     function setImplementationAddress(address _address)
