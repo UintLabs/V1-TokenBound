@@ -24,6 +24,7 @@ contract HelpersConfig is Script {
         address guardianSetter;
         address accountRecoveryManager;
         address ethPriceFeed;
+        address automationRegistry;
         string domainName;
         string domainVersion;
     }
@@ -54,6 +55,7 @@ contract HelpersConfig is Script {
             guardianSetter: vm.addr(3),
             accountRecoveryManager: vm.addr(4),
             ethPriceFeed: 0x694AA1769357215DE4FAC081bf1f309aDC325306,
+            automationRegistry: 0x86EFBD0b6736Bed994962f9797049422A3A8E8Ad,
             domainName: "TokenShield",
             domainVersion: "1"
         });
@@ -69,6 +71,7 @@ contract HelpersConfig is Script {
             guardianSetter: guardSetter,
             accountRecoveryManager: vm.addr(4),
             ethPriceFeed: 0x694AA1769357215DE4FAC081bf1f309aDC325306,
+            automationRegistry: 0x86EFBD0b6736Bed994962f9797049422A3A8E8Ad,
             domainName: "TokenShield",
             domainVersion: "1"
         });

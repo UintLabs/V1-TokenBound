@@ -46,11 +46,12 @@ contract ERC6551ExecutorTest is Test, HelpersConfig, CreateVault {
              */
             ,
             address _tokenShieldNft,
-            address _vaultImpl
+            address _vaultImpl,
+            address _recoveryManager
         ) = deploy.deploy();
         vm.startPrank(config.contractAdmin);
         vm.deal(config.contractAdmin, 100 ether);
-        address vaultAddress = createVault(_tokenShieldNft, _registry, _vaultImpl);
+        address vaultAddress = createVault(_tokenShieldNft, _registry, _vaultImpl, _recoveryManager);
         vm.stopPrank();
         // Defining the deployed contracts
         vault = Vault(payable(vaultAddress));

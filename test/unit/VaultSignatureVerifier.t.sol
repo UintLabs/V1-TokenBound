@@ -31,10 +31,11 @@ contract VaultSignatureVerifierTest is Test, HelpersConfig, CreateVault, EIP712 
         DeployVault deploy = new DeployVault();
 
         // Deploying and creating Vaults, TokenShieldNFT etc.
-        (address _registry, address _guardian, address _tokenShieldNft, address _vaultImpl) = deploy.deploy();
+        (address _registry, address _guardian, address _tokenShieldNft, address _vaultImpl, address _recoveryManager) =
+            deploy.deploy();
         vm.startPrank(config.contractAdmin);
         vm.deal(config.contractAdmin, 100 ether);
-        address vaultAddress = createVault(_tokenShieldNft, _registry, _vaultImpl);
+        address vaultAddress = createVault(_tokenShieldNft, _registry, _vaultImpl, _recoveryManager);
         vm.stopPrank();
         // Defining the deployed contracts
         vault = Vault(payable(vaultAddress));

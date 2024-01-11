@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import { AccessControlEnumerable } from "lib/openzeppelin-contracts/contracts/access/AccessControlEnumerable.sol";
 
-contract IABGuardian is AccessControlEnumerable {
+contract TokenShieldGuardian is AccessControlEnumerable {
     address private ownerAddress;
     address private guardian;
     mapping(address => address) accountToGuardian;

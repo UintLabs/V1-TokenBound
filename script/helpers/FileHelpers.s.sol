@@ -7,7 +7,15 @@ import { Strings } from "openzeppelin-contracts/utils/Strings.sol";
 contract FileHelpers is Script {
     using Strings for string;
 
-    function writeLatestFile(address registry, address guardian, address tokenShieldNft, address vault) public {
+    function writeLatestFile(
+        address registry,
+        address guardian,
+        address tokenShieldNft,
+        address vault,
+        address recoveryManager
+    )
+        public
+    {
         string memory root = vm.projectRoot();
         string memory anvilFilePath = string.concat(root, "/deployments/anvilLatest");
         string memory sepoliaFilePath = string.concat(root, "/deployments/sepoliaLatest");
@@ -16,12 +24,14 @@ contract FileHelpers is Script {
         string memory guardianTxt = string.concat("guardian-", Strings.toHexString(guardian));
         string memory tokenShieldNftTxt = string.concat("tokenShieldNft-", Strings.toHexString(tokenShieldNft));
         string memory vaultTxt = string.concat("vault-", Strings.toHexString(vault));
+        string memory recoveryManagerTxt = string.concat("recoveryManager-", Strings.toHexString(recoveryManager));
         if (block.chainid == 11_155_111) {
             removeFileIfExists(sepoliaFilePath);
             vm.writeLine(sepoliaFilePath, registryTxt);
             vm.writeLine(sepoliaFilePath, guardianTxt);
             vm.writeLine(sepoliaFilePath, tokenShieldNftTxt);
             vm.writeLine(sepoliaFilePath, vaultTxt);
+            vm.writeLine(sepoliaFilePath, recoveryManagerTxt);
             vm.closeFile(sepoliaFilePath);
         } else {
             removeFileIfExists(anvilFilePath);
@@ -29,6 +39,7 @@ contract FileHelpers is Script {
             vm.writeLine(anvilFilePath, guardianTxt);
             vm.writeLine(anvilFilePath, tokenShieldNftTxt);
             vm.writeLine(anvilFilePath, vaultTxt);
+            vm.writeLine(anvilFilePath, recoveryManagerTxt);
             vm.closeFile(anvilFilePath);
         }
 
