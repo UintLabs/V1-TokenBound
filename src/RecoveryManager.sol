@@ -2,8 +2,8 @@
 pragma solidity ^0.8.19;
 
 import { AutomationCompatibleInterface as IAutomationCompatibleInterface } from
-    "@chainlink/src/v0.8/automation/interfaces/AutomationCompatibleInterface.sol";
-import { IKeeperRegistryMaster } from "@chainlink/src/v0.8/automation/interfaces/v2_1/IKeeperRegistryMaster.sol";
+    "@chainlink/v0.8/automation/interfaces/AutomationCompatibleInterface.sol";
+import { IKeeperRegistryMaster } from "@chainlink/v0.8/automation/interfaces/v2_1/IKeeperRegistryMaster.sol";
 import { ITokenShieldSubscription } from "./interfaces/ITokenShieldSubscription.sol";
 import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import { ITokenShieldGuardian as TokenGuardian } from "src/interfaces/ITokenShieldGuardian.sol";
@@ -70,6 +70,10 @@ contract RecoveryManager is IAutomationCompatibleInterface {
             revert RecoveryManager__RecoveryAlreadySet();
         }
 
+        if (_trustee == address(0)) {
+            revert RecoveryManager__AddressCantBeZero();
+        }
+
         RecoveryConfig memory recoveryConfig = RecoveryConfig({
             trustee: _trustee,
             isRecoverySet: true,
@@ -98,9 +102,7 @@ contract RecoveryManager is IAutomationCompatibleInterface {
         if (!recoveryConfig.isRecoverySet) {
             revert RecoveryManager__RecoveryNotSet();
         }
-        if (recoveryConfig.trustee == address(0)) {
-            revert RecoveryManager__AddressCantBeZero();
-        }
+        
         if (block.timestamp <= recoveryConfig.recoveryEndTimestamp) {
             revert RecoveryManager__RecoveryTimeHasntCompleted();
         }
@@ -123,14 +125,11 @@ contract RecoveryManager is IAutomationCompatibleInterface {
         tokenIdToRecoveryConfig[tokenId] = recoveryConfig;
     }
 
-    function stopRecovery(uint256 tokenId, bytes calldata tokenShieldSig) external {
+    function stopRecovery(uint256 tokenId, bytes calldata tokenShieldSig) external onlyTokenShield {
         RecoveryConfig memory recoveryConfig = getRecoveryConfig(tokenId);
 
         if (!recoveryConfig.isRecoverySet) {
             revert RecoveryManager__RecoveryNotSet();
-        }
-        if (recoveryConfig.trustee == address(0)) {
-            revert RecoveryManager__AddressCantBeZero();
         }
         if (block.timestamp >= recoveryConfig.recoveryEndTimestamp) {
             revert RecoveryManager__RecoveryTimeCompleted();
@@ -155,11 +154,16 @@ contract RecoveryManager is IAutomationCompatibleInterface {
         returns (bool upkeepNeeded, bytes memory performData)
     {
         (uint256 tokenId) = abi.decode(checkData, (uint256));
+        (upkeepNeeded, performData) = recoveryStatus(tokenId);
+        
+    }
+
+    function recoveryStatus(uint256 tokenId) private view returns (bool, bytes memory) {
         RecoveryConfig memory recoveryConfig = getRecoveryConfig(tokenId);
         if (recoveryConfig.upkeepForwarder != msg.sender) {
             revert RecoveryManager__OnlyForwarder();
         }
-        if (recoveryConfig.isRecoverySet && recoveryConfig.isUpkeepSet) {
+        if (!(recoveryConfig.isRecoverySet && recoveryConfig.isUpkeepSet)) {
             revert RecoveryManager__RecoveryOrUpkeepNotSet();
         }
         if (recoveryConfig.isRecoveryPeriod && recoveryConfig.recoveryEndTimestamp <= block.timestamp) {
@@ -175,10 +179,15 @@ contract RecoveryManager is IAutomationCompatibleInterface {
             revert RecoveryManager__RecoveryPeriodNotOver();
         }
         (uint256 tokenId) = abi.decode(performData, (uint256));
+        completeRecovery(tokenId);
+    }
+
+    function completeRecovery(uint256 tokenId) private {
         RecoveryConfig memory recoveryConfig = getRecoveryConfig(tokenId);
         recoveryConfig.isRecoveryPeriod = false;
         tokenIdToRecoveryConfig[tokenId] = recoveryConfig;
         s_tokenShieldAddress.completeRecovery(recoveryConfig.toAddress, tokenId);
+        s_automationRegistry.pauseUpkeep(recoveryConfig.upkeepId);
     }
 
     // Getter Functions

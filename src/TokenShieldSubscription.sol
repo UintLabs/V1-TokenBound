@@ -7,7 +7,7 @@ import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/s
 import { UUPSUpgradeable } from "openzeppelin-contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { ERC721Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import { CountersUpgradeable } from "openzeppelin-contracts-upgradeable/utils/CountersUpgradeable.sol";
-import { AggregatorV3Interface } from "@chainlink/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import { AggregatorV3Interface } from "@chainlink/v0.8/interfaces/AggregatorV3Interface.sol";
 import { IRecoveryManager } from "src/interfaces/IRecoveryManager.sol";
 // import { console } from "forge-std/console.sol";
 
@@ -125,15 +125,16 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
                            Mint Function
     //////////////////////////////////////////////////////////////*/
 
-    function createSubscription() external payable mintInitiated {
+    function createSubscription() external payable mintInitiated returns (address account) {
         if (msg.value < getWeiPerUsd()) {
             revert NotEnoughEthSent();
         }
         _mint(msg.sender, idTracker.current());
-        address account =
+        account =
             registry.createAccount(accountImplementation, salt, block.chainid, address(this), idTracker.current());
         idTracker.increment();
         emit VaultCreated(account);
+        
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -153,12 +154,12 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
         emit RecoverySet(tokenId);
     }
 
-    function startRecovery(uint256 tokenId) external {
+    function startRecovery(uint256 tokenId, address toAddress) external {
         address trustee = tokenIdToTrustee[tokenId];
         if (trustee != msg.sender) {
             revert TokenShield__NotGuardian();
         }
-        (address upkeepForwarder, uint256 upkeepId) = recoveryManager.startRecovery(tokenId, trustee);
+        (address upkeepForwarder, uint256 upkeepId) = recoveryManager.startRecovery(tokenId, toAddress);
         emit RecoveryProcessStarted(tokenId, upkeepForwarder, upkeepId);
     }
 

@@ -11,9 +11,11 @@ import { Vault } from "src/Vault.sol";
 import { RecoveryManager } from "src/RecoveryManager.sol";
 import { MockAggregatorV3 } from "src/mock/MockPriceFeeds.sol";
 import { ERC1967Proxy } from "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { MockAutomation } from "src/mock/MockAutomation.sol";
 
 contract DeployVault is Script, HelpersConfig, FileHelpers {
     address entryPoint = address(6);
+    address constant SEPOLIA_AUTOMATION_REGISTRY = 0x86EFBD0b6736Bed994962f9797049422A3A8E8Ad;
 
     function run() external returns (address, address, address, address, address) {
         uint256 privateKey;
@@ -39,10 +41,13 @@ contract DeployVault is Script, HelpersConfig, FileHelpers {
         ERC6551Registry registry;
         if (chainId == 11_155_111) {
             registry = ERC6551Registry(0x000000006551c19487814612e58FE06813775758);
+            config.automationRegistry = SEPOLIA_AUTOMATION_REGISTRY;
         } else {
             registry = new ERC6551Registry{ salt: "655165516551" }();
             MockAggregatorV3 mockPriceFeed = new MockAggregatorV3();
+            MockAutomation automationRegistry = new MockAutomation();
             config.ethPriceFeed = address(mockPriceFeed);
+            config.automationRegistry = address(automationRegistry);
         }
         Guardian guardian = new Guardian{ salt: "655165516551" }(admin, guardianSigner, guardianSetter);
 
@@ -60,7 +65,7 @@ contract DeployVault is Script, HelpersConfig, FileHelpers {
         Vault vaultImpl = new Vault{ salt: "655165516551" }(address(guardian), address(entryPoint));
         TokenShieldNft tokenShieldNft = TokenShieldNft(address(tokenShieldNftProxy));
         RecoveryManager recoveryManager =
-            new RecoveryManager{ salt: "655165516551" }(address(tokenShieldNftProxy), address(0), address(guardian));
+            new RecoveryManager{ salt: "655165516551" }(address(tokenShieldNftProxy), config.automationRegistry, address(guardian));
         return (address(registry), address(guardian), address(tokenShieldNft), address(vaultImpl), address(recoveryManager));
     }
 }

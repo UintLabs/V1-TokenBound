@@ -2,9 +2,8 @@
 pragma solidity ^0.8.19;
 
 import { AutomationCompatibleInterface as IAutomationCompatibleInterface } from
-    "@chainlink/src/v0.8/automation/interfaces/AutomationCompatibleInterface.sol";
-import { IKeeperRegistryMaster } from "@chainlink/src/v0.8/automation/interfaces/v2_1/IKeeperRegistryMaster.sol";
-// import "";
+    "@chainlink/v0.8/automation/interfaces/AutomationCompatibleInterface.sol";
+import { IKeeperRegistryMaster } from "@chainlink/v0.8/automation/interfaces/v2_1/IKeeperRegistryMaster.sol";
 
 error RecoveryManager__NotTokenShieldNft();
 error RecoveryManager__AddressCantBeZero();
@@ -37,7 +36,7 @@ interface IRecoveryManager is IAutomationCompatibleInterface {
         external
         returns (address upkeepForwarder, uint256 upkeepId);
 
-    function stopRecovery(uint256 tokenId, bytes calldata tokenShieldSig) external returns (bool);
+    function stopRecovery(uint256 tokenId, bytes calldata tokenShieldSig) external;
 
     function checkUpkeep(bytes calldata checkData)
         external
