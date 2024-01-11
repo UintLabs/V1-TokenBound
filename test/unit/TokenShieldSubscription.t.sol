@@ -38,7 +38,7 @@ contract TokenShieldSubscriptionTest is Test, HelpersConfig, CreateVault {
     bytes32 public TRANSFER_ROLE = keccak256("TRANSFER_ROLE");
 
     // Events
-    event RecoverySet(uint indexed tokenId);
+    event RecoverySet(uint256 indexed tokenId);
 
     function setUp() public {
         // Getting the config from helpersConfig for the chain
@@ -110,7 +110,7 @@ contract TokenShieldSubscriptionTest is Test, HelpersConfig, CreateVault {
         address owner = vault.owner();
         hoax(owner, 10 ether);
         vm.expectEmit(true, false, false, false);
-        emit RecoverySet(tokenId); 
+        emit RecoverySet(tokenId);
         tokenShieldNft.setRecovery(tokenId, trustee);
     }
 }

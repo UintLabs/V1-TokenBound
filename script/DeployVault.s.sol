@@ -25,9 +25,10 @@ contract DeployVault is Script, HelpersConfig, FileHelpers {
             privateKey = vm.envUint("PRIVATE_KEY");
         }
         vm.startBroadcast(privateKey);
-        (address registry, address guardian, address tokenShieldNft, address vaultImpl, address recoveryManager) = deploy();
+        (address registry, address guardian, address tokenShieldNft, address vaultImpl, address recoveryManager) =
+            deploy();
         vm.stopBroadcast();
-        writeLatestFile(registry, guardian, tokenShieldNft, vaultImpl);
+        writeLatestFile(registry, guardian, tokenShieldNft, vaultImpl, recoveryManager);
         return (registry, guardian, tokenShieldNft, vaultImpl, recoveryManager);
     }
 
@@ -55,17 +56,16 @@ contract DeployVault is Script, HelpersConfig, FileHelpers {
         ERC1967Proxy tokenShieldNftProxy = new ERC1967Proxy{ salt: "655165516551" }(
             address(tokenShieldNftImpl),
             abi.encodeWithSelector(
-                tokenShieldNftImpl.initialize.selector,
-                "TokenShield",
-                "TSD",
-                admin,
-                config.ethPriceFeed
+                tokenShieldNftImpl.initialize.selector, "TokenShield", "TSD", admin, config.ethPriceFeed
             )
         );
         Vault vaultImpl = new Vault{ salt: "655165516551" }(address(guardian), address(entryPoint));
         TokenShieldNft tokenShieldNft = TokenShieldNft(address(tokenShieldNftProxy));
-        RecoveryManager recoveryManager =
-            new RecoveryManager{ salt: "655165516551" }(address(tokenShieldNftProxy), config.automationRegistry, address(guardian));
-        return (address(registry), address(guardian), address(tokenShieldNft), address(vaultImpl), address(recoveryManager));
+        RecoveryManager recoveryManager = new RecoveryManager{ salt: "655165516551" }(
+            address(tokenShieldNftProxy), config.automationRegistry, address(guardian)
+        );
+        return (
+            address(registry), address(guardian), address(tokenShieldNft), address(vaultImpl), address(recoveryManager)
+        );
     }
 }

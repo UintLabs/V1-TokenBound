@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-
 contract MockAutomation {
     struct OnchainConfig {
         uint32 paymentPremiumPPB;
@@ -213,7 +212,7 @@ contract MockAutomation {
 
     function getFastGasFeedAddress() external view returns (address) { }
 
-    function getForwarder(uint256 upkeepID) external view returns (address) { 
+    function getForwarder(uint256 upkeepID) external view returns (address) {
         return address(uint160(upkeepID));
     }
 

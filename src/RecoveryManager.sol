@@ -35,7 +35,6 @@ contract RecoveryManager is IAutomationCompatibleInterface {
 
     ITokenShieldSubscription private s_tokenShieldAddress;
     TokenGuardian private s_guardian;
-    // TokenShieldNft private s_tokenShield;
 
     mapping(uint256 => RecoveryConfig) private tokenIdToRecoveryConfig;
     IKeeperRegistryMaster private s_automationRegistry;
@@ -102,7 +101,7 @@ contract RecoveryManager is IAutomationCompatibleInterface {
         if (!recoveryConfig.isRecoverySet) {
             revert RecoveryManager__RecoveryNotSet();
         }
-        
+
         if (block.timestamp <= recoveryConfig.recoveryEndTimestamp) {
             revert RecoveryManager__RecoveryTimeHasntCompleted();
         }
@@ -155,7 +154,6 @@ contract RecoveryManager is IAutomationCompatibleInterface {
     {
         (uint256 tokenId) = abi.decode(checkData, (uint256));
         (upkeepNeeded, performData) = recoveryStatus(tokenId);
-        
     }
 
     function recoveryStatus(uint256 tokenId) private view returns (bool, bytes memory) {

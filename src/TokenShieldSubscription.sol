@@ -130,11 +130,9 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
             revert NotEnoughEthSent();
         }
         _mint(msg.sender, idTracker.current());
-        account =
-            registry.createAccount(accountImplementation, salt, block.chainid, address(this), idTracker.current());
+        account = registry.createAccount(accountImplementation, salt, block.chainid, address(this), idTracker.current());
         idTracker.increment();
         emit VaultCreated(account);
-        
     }
 
     /*//////////////////////////////////////////////////////////////

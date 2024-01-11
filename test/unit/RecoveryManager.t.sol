@@ -266,6 +266,5 @@ contract RecoveryManagerTest is Test, HelpersConfig, CreateVault {
         assertEq(postRecoveryConfig.isRecoveryPeriod, false);
         assertEq(postRecoveryOwner, trustee);
         // assertEq()
-
     }
 }
