@@ -16,6 +16,7 @@ import { MockAutomation } from "src/mock/MockAutomation.sol";
 contract DeployVault is Script, HelpersConfig, FileHelpers {
     address entryPoint = address(6);
     address constant SEPOLIA_AUTOMATION_REGISTRY = 0x86EFBD0b6736Bed994962f9797049422A3A8E8Ad;
+    uint256 constant RECOVERY_PERIOD = 7 days;
 
     function run() external returns (address, address, address, address, address) {
         uint256 privateKey;
@@ -50,19 +51,19 @@ contract DeployVault is Script, HelpersConfig, FileHelpers {
             config.ethPriceFeed = address(mockPriceFeed);
             config.automationRegistry = address(automationRegistry);
         }
-        Guardian guardian = new Guardian{ salt: "655165516551" }(admin, guardianSigner, guardianSetter);
+        Guardian guardian = new Guardian{ salt: "0.0.2" }(admin, guardianSigner, guardianSetter);
 
-        TokenShieldNft tokenShieldNftImpl = new TokenShieldNft{ salt: "655165516551" }();
-        ERC1967Proxy tokenShieldNftProxy = new ERC1967Proxy{ salt: "655165516551" }(
+        TokenShieldNft tokenShieldNftImpl = new TokenShieldNft{ salt: "0.0.2" }();
+        ERC1967Proxy tokenShieldNftProxy = new ERC1967Proxy{ salt: "0.0.2" }(
             address(tokenShieldNftImpl),
             abi.encodeWithSelector(
                 tokenShieldNftImpl.initialize.selector, "TokenShield", "TSD", admin, config.ethPriceFeed
             )
         );
-        Vault vaultImpl = new Vault{ salt: "655165516551" }(address(guardian), address(entryPoint));
+        Vault vaultImpl = new Vault{ salt: "0.0.2" }(address(guardian), address(entryPoint));
         TokenShieldNft tokenShieldNft = TokenShieldNft(address(tokenShieldNftProxy));
-        RecoveryManager recoveryManager = new RecoveryManager{ salt: "655165516551" }(
-            address(tokenShieldNftProxy), config.automationRegistry, address(guardian)
+        RecoveryManager recoveryManager = new RecoveryManager{ salt: "0.0.2" }(
+            address(tokenShieldNftProxy), config.automationRegistry, address(guardian), RECOVERY_PERIOD
         );
         return (
             address(registry), address(guardian), address(tokenShieldNft), address(vaultImpl), address(recoveryManager)

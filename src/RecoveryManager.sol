@@ -33,19 +33,22 @@ contract RecoveryManager is IAutomationCompatibleInterface {
         bool isRecoveryPeriod;
     }
 
+    uint48 immutable recoveryPeriod;
+
     ITokenShieldSubscription private s_tokenShieldAddress;
     TokenGuardian private s_guardian;
 
     mapping(uint256 => RecoveryConfig) private tokenIdToRecoveryConfig;
     IKeeperRegistryMaster private s_automationRegistry;
 
-    constructor(address _tokenShieldNft, address _automationRegistry, address _guardian) {
+    constructor(address _tokenShieldNft, address _automationRegistry, address _guardian, uint256 _recoveryPeriod) {
         if (_tokenShieldNft == _automationRegistry) {
             revert RecoveryManager__AddressesCantBeSame();
         }
         s_tokenShieldAddress = ITokenShieldSubscription(_tokenShieldNft);
         s_automationRegistry = IKeeperRegistryMaster(_automationRegistry);
         s_guardian = TokenGuardian(_guardian);
+        recoveryPeriod = uint48(_recoveryPeriod);
     }
 
     modifier onlyTokenShield() {
@@ -107,7 +110,7 @@ contract RecoveryManager is IAutomationCompatibleInterface {
         }
 
         recoveryConfig.recoveryStartTimestamp = uint48(block.timestamp);
-        recoveryConfig.recoveryEndTimestamp = uint48(block.timestamp) + uint48(7 days);
+        recoveryConfig.recoveryEndTimestamp = uint48(block.timestamp) + uint48(recoveryPeriod);
         if (!recoveryConfig.isUpkeepSet) {
             recoveryConfig.upkeepId = s_automationRegistry.registerUpkeep(
                 address(this), 100_000, address(this), abi.encodePacked(tokenId), ""

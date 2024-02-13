@@ -5,10 +5,10 @@ import { ERC721 } from "openzeppelin-contracts/token/ERC721/ERC721.sol";
 import { Ownable } from "openzeppelin-contracts/access/Ownable.sol";
 
 contract MockNFT is ERC721, Ownable {
-    constructor() ERC721("MOCK", "MCK") { }
+    constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) { }
 
     function _baseURI() internal pure override returns (string memory) {
-        return "BAMBA";
+        return "https://tokenshield.io";
     }
 
     function safeMint(address to, uint256 tokenId) public {

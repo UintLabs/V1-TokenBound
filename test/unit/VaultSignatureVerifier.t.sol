@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import { Test } from "forge-std/Test.sol";
+import { Test, console2 } from "forge-std/Test.sol";
 import { Vm } from "forge-std/Vm.sol";
 import { Vault } from "src/Vault.sol";
 import { TokenShieldSubscription as TokenShieldNft } from "src/TokenShieldSubscription.sol";
@@ -90,5 +90,31 @@ contract VaultSignatureVerifierTest is Test, HelpersConfig, CreateVault, EIP712 
         bytes memory signature2 = abi.encode(v3, r3, s3, v4, r4, s4);
         bytes4 returnedValue2 = vault.isValidSignature(digest, signature2);
         assertEq(returnedValue2, bytes4(0));
+    }
+
+    function test_checkForAbiEncode() external {
+        bytes32 digest = keccak256("Random Hash");
+
+       // Since the private key of the vaultMinter is 1
+        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(1, digest);
+
+        // Since the private key of the guardianSigner is 2 from HelpersConfig
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(2, digest);
+
+        bytes memory combinedTogether = abi.encode(v1, r1, s1, v2, r2, s2);
+
+        bytes memory signature1 = abi.encode(v1, r1, s1);
+        bytes memory signature2 = abi.encode(v2, r2, s2);
+        bytes memory combinedSeperately = abi.encodePacked(signature1, signature2);
+
+        console2.log("CombinedTogether- ");
+        console2.logBytes(combinedTogether);
+        console2.log("CombinedSeperately- ");
+        console2.logBytes(combinedSeperately);
+        assertEq(combinedSeperately, combinedTogether);
+        bytes memory signature1_1 = abi.encodePacked(r1,s1,v1);
+
+        console2.log("Signature1_1- ");
+        console2.logBytes(signature1_1);
     }
 }

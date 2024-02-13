@@ -15,10 +15,10 @@ import { Vm } from "forge-std/Vm.sol";
 contract CreateVault is Script, HelpersConfig, FileHelpers {
     function run() external returns (address createdVault) {
         uint256 privateKey;
-        address tokenShieldNftAddress = 0x7C2562c8eC021c82E51E7C6737d3F613026e263d;
-        address erc6551RegistryAddress = 0xf8666e5042139b90670b5548BFBeCd61b9a45897;
-        address vaultImplAddress = 0xd2B513C2fC13C200c2f9E080C5b99fb5897F7E3e;
-        address recoveryManager = address(0);
+        address tokenShieldNftAddress = 0x44a00a08173163E16a7384553Abd3C17B87435B1;
+        address erc6551RegistryAddress = 0x000000006551c19487814612e58FE06813775758;
+        address vaultImplAddress = 0x6cF613ba1D9852BdBf1452AA3D5C5507964a8F9B;
+        address recoveryManager = 0x07047a512e63e2EEA65E2D956Ea60a96161Ad487;
         if (chainId == 11_155_111) {
             privateKey = vm.envUint("SEPOLIA_PRIVATE_KEY");
         } else {

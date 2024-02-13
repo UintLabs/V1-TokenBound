@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import { Test } from "forge-std/Test.sol";
+import { Test, console2 } from "forge-std/Test.sol";
 import { Vault } from "src/Vault.sol";
 import { TokenShieldSubscription as TokenShieldNft } from "src/TokenShieldSubscription.sol";
 import { MockNFT } from "src/mock/MockNFT.sol";
@@ -119,6 +119,7 @@ contract ERC6551ExecutorTest is Test, HelpersConfig, CreateVault {
         // Since the private key of the vaultMinter is 1
         (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(1, digest);
 
+        
         // Since the private key of the guardianSigner is 2 from HelpersConfig
         (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(2, digest);
 
@@ -131,31 +132,62 @@ contract ERC6551ExecutorTest is Test, HelpersConfig, CreateVault {
     }
 
     function testSendEther() public mintVault {
+        vm.txGasPrice(1);
         uint256 state = vault.state();
-        Tx memory transaction = Tx({ to: nonMinter, value: 1 ether, nonce: state, data: "" });
+        Tx memory transaction = Tx({ to: nonMinter, value: 0.000001 ether, nonce: state, data: "" });
         bytes32 transactionHash = getTransactionHash(transaction);
         bytes32 digest = getTransactionHashWithDomainSeperator(transactionHash, address(vault));
-
+        console2.log("User-");
+        console2.log(address(vaultMinter));
+        console2.log("Verifying Contract- ");
+        console2.log(address(vault));
+        console2.log("Transaction- ");
+        console2.log(nonMinter);
+        console2.log(state);
+        console2.log("Digest- ");
+        console2.logBytes32(digest);
         // Since the private key of the vaultMinter is 1
         (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(1, digest);
-
+        uint privateKey;
+        if (block.chainid == 11155111) {
+            privateKey = vm.envUint("SEPOLIA_GUARDIAN_SIGNER_PRIVATE_KEY");
+        }else {
+            privateKey = 2;
+        }
+        console2.log("Chain Id", block.chainid);
         // Since the private key of the guardianSigner is 2 from HelpersConfig
-        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(2, digest);
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(privateKey, digest);
 
         bytes memory signature = abi.encode(v1, r1, s1, v2, r2, s2);
 
+        bytes memory signature1 = abi.encodePacked(r1,s1,v1);
+
+        bytes memory signature2 = abi.encodePacked(r2,s2,v2);
+        
+
+        console2.log("Signature 1-");
+        console2.logBytes(signature1);
+        
+        console2.log("Signature 2-");
+        console2.logBytes(signature2);
+        console2.log("Consolidated Signature- ");
+        console2.logBytes(signature);
         bytes memory data = abi.encode(transaction, signature);
         uint256 priorBalance = nonMinter.balance;
         vm.deal(address(vault), 100 ether);
+        uint priorGas = gasleft();
         hoax(vaultMinter, 10 ether);
-        vault.execute(nonMinter, 1 ether, data, 0);
+        vault.execute(nonMinter, 0.000001 ether, data, 0);
+        uint postGas = gasleft();
+        uint gasUsed = priorGas - postGas;
+        console2.log("Gas used- ", gasUsed);
         uint256 postBalance = nonMinter.balance;
 
-        assertEq(postBalance, priorBalance + 1 ether);
+        assertEq(postBalance, priorBalance + 0.000001 ether);
     }
 
     modifier nftDeploy() {
-        nft = new MockNFT();
+        nft = new MockNFT("TEST","T1");
         nft.safeMint(address(vault), 1);
         _;
     }
