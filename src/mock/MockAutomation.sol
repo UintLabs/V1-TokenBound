@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.19;
 
 contract MockAutomation {
     struct OnchainConfig {
@@ -58,7 +58,11 @@ contract MockAutomation {
         returns (uint32 configCount, uint32 blockNumber, bytes32 configDigest)
     { }
 
-    function latestConfigDigestAndEpoch() external view returns (bool scanLogs, bytes32 configDigest, uint32 epoch) { }
+    function latestConfigDigestAndEpoch()
+        external
+        view
+        returns (bool scanLogs, bytes32 configDigest, uint32 epoch)
+    { }
 
     function onTokenTransfer(address sender, uint256 amount, bytes memory data) external { }
 

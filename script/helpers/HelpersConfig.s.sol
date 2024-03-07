@@ -19,7 +19,9 @@ contract HelpersConfig is Script {
     }
 
     struct ChainConfig {
-        address contractAdmin;
+        address defaultAdmin;
+        address moduleAdmin;
+        address policyAdmin;
         address guardianSigner;
         address guardianSetter;
         address accountRecoveryManager;
@@ -50,7 +52,9 @@ contract HelpersConfig is Script {
 
     function getAnvilConfig() internal pure returns (ChainConfig memory) {
         return ChainConfig({
-            contractAdmin: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266,
+            defaultAdmin: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266,
+            moduleAdmin: vm.addr(5),
+            policyAdmin: vm.addr(6),
             guardianSigner: vm.addr(2),
             guardianSetter: vm.addr(3),
             accountRecoveryManager: vm.addr(4),
@@ -62,11 +66,13 @@ contract HelpersConfig is Script {
     }
 
     function getSepoliaConfig() internal view returns (ChainConfig memory) {
-        address adminAddress = vm.envAddress("SEPOLIA_ADMIN_ADDRESS");
+        address adminAddress = vm.envAddress("SEPOLIA_DEFAULT_ADMIN_ADDRESS");
         address guardSigner = vm.envAddress("SEPOLIA_GUARDIAN_SIGNER");
         address guardSetter = vm.envAddress("SEPOLIA_GUARDIAN_SETTER");
         return ChainConfig({
-            contractAdmin: adminAddress,
+            defaultAdmin: adminAddress,
+            moduleAdmin: vm.addr(5),
+            policyAdmin: vm.addr(6),
             guardianSigner: guardSigner,
             guardianSetter: guardSetter,
             accountRecoveryManager: vm.addr(4),

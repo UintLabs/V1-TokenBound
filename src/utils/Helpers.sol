@@ -5,10 +5,12 @@ pragma solidity ^0.8.19;
 
 /**
  * returned data from validateUserOp.
- * validateUserOp returns a uint256, with is created by `_packedValidationData` and parsed by `_parseValidationData`
+ * validateUserOp returns a uint256, with is created by `_packedValidationData` and parsed by
+ * `_parseValidationData`
  * @param aggregator - address(0) - the account validated the signature by itself.
  *              address(1) - the account failed to validate the signature.
- *              otherwise - this is an address of a signature aggregator that must be used to validate the signature.
+ *              otherwise - this is an address of a signature aggregator that must be used to validate the
+ * signature.
  * @param validAfter - this UserOp is valid only after this timestamp.
  * @param validaUntil - this UserOp is valid only up to this timestamp.
  */
@@ -74,7 +76,8 @@ function _packValidationData(bool sigFailed, uint48 validUntil, uint48 validAfte
 
 /**
  * keccak function over calldata.
- * @dev copy calldata into memory, do keccak and drop allocated memory. Strangely, this is more efficient than letting
+ * @dev copy calldata into memory, do keccak and drop allocated memory. Strangely, this is more efficient than
+ * letting
  * solidity do it.
  */
 function calldataKeccak(bytes calldata data) pure returns (bytes32 ret) {

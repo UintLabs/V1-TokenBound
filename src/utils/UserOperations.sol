@@ -17,7 +17,8 @@ import { calldataKeccak } from "src/utils/Helpers.sol";
  * overhead.
  * @param maxFeePerGas same as EIP-1559 gas parameter.
  * @param maxPriorityFeePerGas same as EIP-1559 gas parameter.
- * @param paymasterAndData if set, this field holds the paymaster address and paymaster-specific data. the paymaster
+ * @param paymasterAndData if set, this field holds the paymaster address and paymaster-specific data. the
+ * paymaster
  * will pay for the transaction instead of the sender.
  * @param signature sender-verified signature over the entire request, the EntryPoint address and the chain ID.
  */
