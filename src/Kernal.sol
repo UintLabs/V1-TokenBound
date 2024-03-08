@@ -6,6 +6,7 @@ import "src/utils/AccessStructs.sol";
 import { AccessControl } from "openzeppelin-contracts/access/AccessControl.sol";
 import {Module} from "src/abstract/Module/Module.sol";
 import {Errors} from "src/utils/Errors.sol";
+import {Events} from "src/utils/Events.sol";
 /////////////////////////////////////////////////////////////////////////////////
 //                               Kernel Contract                               //
 /////////////////////////////////////////////////////////////////////////////////
@@ -15,7 +16,7 @@ import {Errors} from "src/utils/Errors.sol";
  * @notice A registry contract that manages a set of policy and module contracts, as well
  *         as the permissions to interact with those contracts.
  */
-contract Kernal is  AccessControl {
+contract Kernal is AccessControl {
     
     ///////////////////////////////////
     /////// Constants&Immuatbles //////
@@ -58,6 +59,22 @@ contract Kernal is  AccessControl {
         keycodeToModule[keycode] = _module;
         
         Module(_module).INIT();
+
+        emit Events.InstalledModule(_module);
+    }
+
+    /// @notice Uninstall Module
+    function uninstallModule(address _module) external onlyRole(MODULE_ADMIN_ROLE) {
+        // checks if module with this module doesn't already exists 
+        if (Keycode.unwrap(moduleToKeycode[_module]) == bytes5(0)) {
+            revert Errors.ModuleDoesntExist(_module);
+        }
+        Keycode keycode = Module(_module).KEYCODE();
+        // Updates Variables
+        moduleToKeycode[_module] = Keycode.wrap(0);
+        delete keycodeToModule[keycode];
+
+        emit Events.UninstalledModule(_module);
     }
 
 
@@ -69,7 +86,7 @@ contract Kernal is  AccessControl {
 
     
 
-    /// @notice Uninstall Module
+    
 
 
 
