@@ -27,8 +27,8 @@ contract Kernal is  AccessControl {
     ///////// State Variables /////////
     ///////////////////////////////////
 
-    mapping (address _moduleAddress => Keycode _keycode) moduleToKeycode;
-    mapping (Keycode keycode => address _moduleAddress) keycodeToModule;
+    mapping (address _moduleAddress => Keycode _keycode) private moduleToKeycode;
+    mapping (Keycode keycode => address _moduleAddress) private keycodeToModule;
 
 
     ///////////////////////////////////
@@ -70,4 +70,18 @@ contract Kernal is  AccessControl {
     
 
     /// @notice Uninstall Module
+
+
+
+    ///////////////////////////////////
+    //////// Getter Functions /////////
+    ///////////////////////////////////
+
+    function getkeycodeFromModule(address _module) external view returns (Keycode) {
+        return moduleToKeycode[_module];
+    }
+
+    function getModuleFromKeycode(Keycode _keycode) external view  returns (address) {
+        return keycodeToModule[_keycode];
+    }
 }

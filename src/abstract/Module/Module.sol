@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import "src/utils/AccessStructs.sol";
 import {Kernal} from "src/Kernal.sol";
+import {Errors} from "src/utils/Errors.sol";
 
 abstract contract Module {
 
@@ -10,7 +11,9 @@ abstract contract Module {
     Kernal immutable kernal;
 
     modifier onlyKernal() {
-        
+        if (msg.sender != address(kernal)) {
+            revert Errors.NotFromKernal();
+        }
         _;
     }
 

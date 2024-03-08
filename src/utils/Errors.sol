@@ -5,4 +5,5 @@ import "src/utils/AccessStructs.sol";
 contract Errors {
     
     error KeycodeExists(address _module, Keycode keycode);
+    error NotFromKernal();
 }

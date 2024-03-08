@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import { Script } from "forge-std/Script.sol";
+import "src/utils/AccessStructs.sol";
 
 contract HelpersConfig is Script {
     struct EIP712Domain {
@@ -22,6 +23,7 @@ contract HelpersConfig is Script {
         address defaultAdmin;
         address moduleAdmin;
         address policyAdmin;
+        Keycode vaultModuleKeycode;
         address guardianSigner;
         address guardianSetter;
         address accountRecoveryManager;
@@ -55,6 +57,7 @@ contract HelpersConfig is Script {
             defaultAdmin: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266,
             moduleAdmin: vm.addr(5),
             policyAdmin: vm.addr(6),
+            vaultModuleKeycode: Keycode.wrap("VTM"),
             guardianSigner: vm.addr(2),
             guardianSetter: vm.addr(3),
             accountRecoveryManager: vm.addr(4),
@@ -73,6 +76,7 @@ contract HelpersConfig is Script {
             defaultAdmin: adminAddress,
             moduleAdmin: vm.addr(5),
             policyAdmin: vm.addr(6),
+            vaultModuleKeycode: Keycode.wrap("VTM"),
             guardianSigner: guardSigner,
             guardianSetter: guardSetter,
             accountRecoveryManager: vm.addr(4),

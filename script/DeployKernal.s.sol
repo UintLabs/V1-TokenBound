@@ -15,7 +15,7 @@ contract DeployKernal is Script, HelpersConfig{
 
     function deployKernal() public  returns (address) {
         ChainConfig memory config = getConfig();
-        Kernal kernal = new Kernal(config.defaultAdmin, config.moduleAdmin, config.policyAdmin);
+        Kernal kernal = new Kernal{salt:"1"}(config.defaultAdmin, config.moduleAdmin, config.policyAdmin);
 
         return address(kernal); 
     }
