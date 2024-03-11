@@ -6,7 +6,7 @@ pragma solidity 0.8.19;
  * @dev Defines permission for a policy to have access to the `funcSelector` at a
  *      specific module contract via its keycode.
  */
-struct Permissions {
+struct Permission {
     Keycode keycode;
     bytes4 funcSelector;
 }

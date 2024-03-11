@@ -7,4 +7,6 @@ library Errors {
     error KeycodeExists(address _module, Keycode keycode);
     error NotFromKernal();
     error ModuleDoesntExist(address _module);
+    error Policy_ModuleDoesNotExist(Keycode keycode);
+    error Kernal_PolicyActiveAlready(address policy);
 }

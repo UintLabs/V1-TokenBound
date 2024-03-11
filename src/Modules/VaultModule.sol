@@ -8,4 +8,8 @@ contract VaultModule is Module {
     constructor(Keycode _keycode, address _kernal) Module(_keycode, _kernal) { }
 
     function INIT() external override onlyKernal { }
+
+    function addVault() external  {
+        
+    }
 }
