@@ -5,8 +5,10 @@ import "src/utils/AccessStructs.sol";
 import { Test, console2 } from "forge-std/Test.sol";
 import { Kernal } from "src/Kernal.sol";
 import { VaultModule } from "src/Modules/VaultModule.sol";
+import { Factory } from "src/Policies/Factory.sol";
 import { DeployKernal } from "script/DeployKernal.s.sol";
 import { DeployVaultModule } from "script/DeployVaultModule.s.sol";
+import { DeployFactory } from "script/DeployFactory.s.sol";
 import { HelpersConfig } from "script/helpers/HelpersConfig.s.sol";
 import { Errors } from "src/utils/Errors.sol";
 import { Events } from "src/utils/Events.sol";
@@ -23,13 +25,16 @@ contract KernalTest is Test, HelpersConfig {
 
     Kernal kernal;
     VaultModule vaultModule;
+    Factory factory;
 
     function setUp() public {
         DeployKernal deployKernal = new DeployKernal();
         DeployVaultModule deployVaultModule = new DeployVaultModule();
+        DeployFactory deployFactory = new DeployFactory();
 
         kernal = Kernal(deployKernal.deployKernal());
         vaultModule = deployVaultModule.deploy(address(kernal));
+        factory = deployFactory.deploy(address(kernal));
         config = getConfig();
     }
 
@@ -89,7 +94,7 @@ contract KernalTest is Test, HelpersConfig {
 
     function test_uninstallModule_RevertsIfModuleDoesntExist() external installModule(address(vaultModule)) {
         vm.startPrank(config.moduleAdmin);
-        vm.expectRevert(abi.encodeWithSelector(Errors.ModuleDoesntExist.selector,address(25)));
+        vm.expectRevert(abi.encodeWithSelector(Errors.ModuleDoesntExist.selector, address(25)));
         kernal.uninstallModule(address(25));
 
         vm.stopPrank();
@@ -98,7 +103,6 @@ contract KernalTest is Test, HelpersConfig {
     function test_uninstallModule_Correctly() external {
         Keycode expectedKeycode = kernal.getkeycodeFromModule(address(vaultModule));
         address expectedModule = address(0);
-
 
         vm.startPrank(config.moduleAdmin);
         kernal.installModule(address(vaultModule));
@@ -119,6 +123,52 @@ contract KernalTest is Test, HelpersConfig {
         emit Events.UninstalledModule(address(vaultModule));
         kernal.uninstallModule(address(vaultModule));
 
+        vm.stopPrank();
+    }
+
+    function test_addPolicy_revertsIfNotPolicyAdmin() external {
+        vm.expectRevert();
+        kernal.addPolicy(address(factory));
+    }
+
+    function test_addPolicy_revertsIfPolicyActive() external installModule(address(vaultModule)) {
+        vm.startPrank(config.policyAdmin);
+        kernal.addPolicy(address(factory));
+        vm.expectRevert(abi.encodeWithSelector(Errors.Kernal_PolicyActiveAlready.selector, address(factory)));
+        kernal.addPolicy(address(factory));
+        vm.stopPrank();
+    }
+
+    modifier addPolicy(address _factory) {
+        vm.startPrank(config.policyAdmin);
+        kernal.addPolicy(address(_factory));
+        vm.stopPrank();
+        _;
+    }
+
+    function test_addPolicy_PolicyAndPermissionsSetCorrectly()
+        external
+        installModule(address(vaultModule))
+        addPolicy(address(factory))
+    {
+        // module Permissions set
+        bool isPermission =
+            kernal.getModulePermission(Keycode.wrap("VTM"), address(factory), VaultModule.addVault.selector);
+        assertEq(isPermission, true);
+        // Added to ModuleDependents array
+        address dependentPolicy = kernal.moduleDependents(Keycode.wrap("VTM"), 0);
+        assertEq(dependentPolicy, address(factory));
+    }
+
+    function test_addPolicy_EmitCorrectEvents() external installModule(address(vaultModule)) {
+        vm.startPrank(config.policyAdmin);
+        // Permission Granted emitted
+        vm.expectEmit(true, true, true, false, address(kernal));
+        emit Events.PermissionGranted(address(factory), Keycode.wrap("VTM"), VaultModule.addVault.selector);
+        // emits activated policy
+        vm.expectEmit(true, true, false, false, address(kernal));
+        emit Events.ActivatedPolicy(address(factory));
+        kernal.addPolicy(address(factory));
         vm.stopPrank();
     }
 }
