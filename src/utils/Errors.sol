@@ -9,4 +9,5 @@ library Errors {
     error ModuleDoesntExist(address _module);
     error Policy_ModuleDoesNotExist(Keycode keycode);
     error Kernal_PolicyActiveAlready(address policy);
+    error Kernal_PolicyInactive(address policy);
 }

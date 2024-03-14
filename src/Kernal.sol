@@ -104,7 +104,43 @@ contract Kernal is AccessControl {
     }
 
     /// @notice Removes an active policy
-    // function removePolicy()  returns () {}
+    function removePolicy(address _policy) external onlyRole(POLICY_ADMIN_ROLE) {
+        Policy policy = Policy(_policy);
+
+        if (!policy.isActive()) {
+            revert Errors.Kernal_PolicyInactive(_policy);
+        }
+
+        //Ask for the permissions it needs
+        Permission[] memory permissions = policy.requestPermissions();
+
+        //Revoke permissions to access modules and their certain functions
+
+        _setPolicyPermissison(_policy, permissions, false);
+
+        //Get the Modules the _policy is dependent on
+        Keycode[] memory keycodesUsedByPolicy = policy.configureDependencies();
+
+        // Loop through the keycode/modules the policy is dependent on
+        for (uint256 i = 0; i < keycodesUsedByPolicy.length; i++) {
+            // Get all the policies that depend on the keycode and cache it
+            address[] memory dependentPolicies = moduleDependents[keycodesUsedByPolicy[i]];
+            uint256 dependentsLength = dependentPolicies.length;
+            // Loop through the dependencies to find the _policy and remove it
+            for (uint256 j = 0; j < dependentsLength; j++) {
+                address dependentPolicy = dependentPolicies[j];
+                if (dependentPolicy == _policy) {
+                    dependentPolicies[j] = dependentPolicies[dependentsLength - 1];
+                    moduleDependents[keycodesUsedByPolicy[i]] = dependentPolicies;
+                    moduleDependents[keycodesUsedByPolicy[i]].pop();
+                }
+            }
+        }
+
+        // Set as Inactive
+        policy.setActiveStatus(false);
+        emit Events.DeactivatedPolicy(_policy);
+    }
 
     ///////////////////////////////////
     /////// Internal Functions ////////
@@ -115,7 +151,7 @@ contract Kernal is AccessControl {
             Permission memory permission = _permissions[i];
             modulePermissions[permission.keycode][_policy][permission.funcSelector] = _grant;
 
-            emit Events.PermissionGranted(_policy, permission.keycode, permission.funcSelector);
+            emit Events.PermissionUpdated(_policy, permission.keycode, permission.funcSelector, _grant);
         }
     }
 
@@ -133,5 +169,9 @@ contract Kernal is AccessControl {
 
     function getModulePermission(Keycode _keycode, address _policy, bytes4 _selector) public view returns (bool) {
         return modulePermissions[_keycode][_policy][_selector];
+    }
+
+    function getModuleDependents(Keycode _keycode) external view returns (address[] memory) {
+        return moduleDependents[_keycode];
     }
 }

@@ -6,5 +6,6 @@ library Events {
     event InstalledModule(address indexed _module);
     event UninstalledModule(address indexed _module);
     event ActivatedPolicy(address indexed _policy);
-    event PermissionGranted(address indexed _policy, Keycode indexed _keycode, bytes4 indexed selector);
+    event DeactivatedPolicy(address indexed _policy);
+    event PermissionUpdated(address indexed _policy, Keycode indexed _keycode, bytes4 indexed selector, bool _grant);
 }

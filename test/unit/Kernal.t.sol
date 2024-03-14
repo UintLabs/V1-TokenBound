@@ -164,11 +164,65 @@ contract KernalTest is Test, HelpersConfig {
         vm.startPrank(config.policyAdmin);
         // Permission Granted emitted
         vm.expectEmit(true, true, true, false, address(kernal));
-        emit Events.PermissionGranted(address(factory), Keycode.wrap("VTM"), VaultModule.addVault.selector);
+        emit Events.PermissionUpdated(address(factory), Keycode.wrap("VTM"), VaultModule.addVault.selector, true);
         // emits activated policy
         vm.expectEmit(true, true, false, false, address(kernal));
         emit Events.ActivatedPolicy(address(factory));
         kernal.addPolicy(address(factory));
+        vm.stopPrank();
+    }
+
+    function test_removePolicy_RevertsIfNotPolicyAdmin()
+        external
+        installModule(address(vaultModule))
+        addPolicy(address(factory))
+    {
+        vm.expectRevert();
+        kernal.removePolicy(address(factory));
+    }
+
+    function test_removePolicy_RevertsIfNotActive() external installModule(address(vaultModule)) {
+        vm.expectRevert(abi.encodeWithSelector(Errors.Kernal_PolicyInactive.selector, address(factory)));
+        vm.startPrank(config.policyAdmin);
+        kernal.removePolicy(address(factory));
+        vm.stopPrank();
+    }
+
+    modifier removePolicy(address _policy) {
+        vm.startPrank(config.policyAdmin);
+        kernal.removePolicy(_policy);
+        vm.stopPrank();
+        _;
+    }
+
+    function test_removePolicy_PolicyAndPermissionRemoved()
+        external
+        installModule(address(vaultModule))
+        addPolicy(address(factory))
+        removePolicy(address(factory))
+    {
+        // module Permissions removed
+        bool isPermission =
+            kernal.getModulePermission(Keycode.wrap("VTM"), address(factory), VaultModule.addVault.selector);
+
+        assertEq(isPermission, false);
+        // Added to ModuleDependents array
+        address[] memory dependentPolicy = kernal.getModuleDependents(Keycode.wrap("VTM"));
+        assert(dependentPolicy.length == 0);
+    }
+
+    function test_removePolicy_EmitsEventsCorrectly()
+        external
+        installModule(address(vaultModule))
+        addPolicy(address(factory))
+    {
+        vm.startPrank(config.policyAdmin);
+        vm.expectEmit(true, true, false, false, address(kernal));
+        emit Events.PermissionUpdated(address(factory), Keycode.wrap("VTM"), VaultModule.addVault.selector, false);
+
+        vm.expectEmit(true, true, false, false, address(kernal));
+        emit Events.DeactivatedPolicy(address(factory));
+        kernal.removePolicy(address(factory));
         vm.stopPrank();
     }
 }
