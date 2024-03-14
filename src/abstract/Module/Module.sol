@@ -17,6 +17,15 @@ abstract contract Module {
         _;
     }
 
+    modifier permissioned() {
+        bool isAllowed = kernal.getModulePermission(keycode, msg.sender, msg.sig);
+
+        if (!isAllowed) {
+            revert Errors.NotFromAuthorisedPolicy(msg.sender);
+        }
+        _;
+    }
+
     constructor(Keycode _keycode, address _kernal) {
         keycode = _keycode;
         kernal = Kernal(_kernal);

@@ -20,8 +20,8 @@ contract Kernal is AccessControl {
     ///////////////////////////////////
     /////// Constants&Immuatbles //////
     ///////////////////////////////////
-    bytes32 constant MODULE_ADMIN_ROLE = keccak256("MODULE_ADMIN_ROLE");
-    bytes32 constant POLICY_ADMIN_ROLE = keccak256("POLICY_ADMIN_ROLE");
+    bytes32 constant public MODULE_ADMIN_ROLE = keccak256("MODULE_ADMIN_ROLE");
+    bytes32 constant public POLICY_ADMIN_ROLE = keccak256("POLICY_ADMIN_ROLE");
 
     ///////////////////////////////////
     ///////// State Variables /////////
@@ -167,7 +167,7 @@ contract Kernal is AccessControl {
         return keycodeToModule[_keycode];
     }
 
-    function getModulePermission(Keycode _keycode, address _policy, bytes4 _selector) public view returns (bool) {
+    function getModulePermission(Keycode _keycode, address _policy, bytes4 _selector) external view returns (bool) {
         return modulePermissions[_keycode][_policy][_selector];
     }
 
