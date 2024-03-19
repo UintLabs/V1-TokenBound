@@ -9,7 +9,9 @@ import { ERC1967Proxy as Proxy } from "openzeppelin-contracts/proxy/ERC1967/ERC1
 
 contract DeployFactory is Script, HelpersConfig {
     function run() external returns (Factory _factory) {
+        vm.startBroadcast();
         _factory = deploy(0xaC062861Bb27Ee2Fdd7D2CC9C64B1c5538C914b4);
+        vm.stopBroadcast();
     }
 
     function deploy(address _kernal) public returns (Factory) {

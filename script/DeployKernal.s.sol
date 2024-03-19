@@ -10,7 +10,9 @@ contract DeployKernal is Script, HelpersConfig{
     
     
     function run() external  returns (address kernal) {
+        vm.startBroadcast();
         kernal = deployKernal();
+        vm.stopBroadcast();
     }
 
     function deployKernal() public  returns (address) {

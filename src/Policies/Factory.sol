@@ -69,7 +69,7 @@ contract Factory is Initializable, UUPSUpgradeable, Policy {
     /////// Internal Functions ////////
     ///////////////////////////////////
 
-    function _mintProVault() internal returns (address _account) {
+    function _mintProVault() internal returns (address /**_account*/) {
         revert Errors.Factory_ProVaultNotMintable();
     }
 
@@ -107,7 +107,8 @@ contract Factory is Initializable, UUPSUpgradeable, Policy {
             ,
             /*uint startedAt*/
             uint256 timeStamp,
-        ) = vaultStorage.ethPriceFeed() /*uint80 answeredInRound*/ .latestRoundData();
+            /*uint80 answeredInRound*/
+        ) = vaultStorage.ethPriceFeed().latestRoundData();
         if (block.timestamp - timeStamp > vaultStorage.maxStaleDataTime()) { }
         uint256 chainlinkPrice;
         if (answer < 0) {
@@ -163,11 +164,12 @@ contract Factory is Initializable, UUPSUpgradeable, Policy {
     }
 
     function requestPermissions() external view virtual override returns (Permission[] memory requests) {
-        requests = new Permission[](1);
+        requests = new Permission[](2);
         requests[0] = Permission(Keycode.wrap("VTM"), VaultModule.addVault.selector);
+        requests[1] = Permission(Keycode.wrap("VTM"), VaultModule.incrementNonce.selector);
     }
 
-    function policyId() public view virtual override returns (bytes32) {
+    function policyId() public pure override returns (bytes32) {
         return keccak256("FACTORY");
     }
 }
