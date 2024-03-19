@@ -13,4 +13,5 @@ library Events {
     event Vault_MaxStaleDataTimeSet(uint indexed _maxStaleDataTime);
 
     event Factory_VaultCreated(address indexed account);
+    event Vault_SafeFactorySet(address indexed safeFactory);
 }

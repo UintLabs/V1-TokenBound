@@ -34,6 +34,8 @@ contract Kernal is AccessControl {
     // Module <> Policy Permissions. Keycode -> Policy -> Function Selector -> Permission.
     mapping(Keycode => mapping(address _policy => mapping(bytes4 => bool))) private modulePermissions;
 
+    mapping (bytes32 policyId => address _policy) private policyIdToPolicy;
+
     ///////////////////////////////////
     /////////// Constructor ///////////
     ///////////////////////////////////
@@ -100,6 +102,8 @@ contract Kernal is AccessControl {
         // Set status as active
 
         policy.setActiveStatus(true);
+        bytes32 _policyId = policy.policyId();
+        policyIdToPolicy[_policyId] = _policy;
         emit Events.ActivatedPolicy(_policy);
     }
 
@@ -139,6 +143,9 @@ contract Kernal is AccessControl {
 
         // Set as Inactive
         policy.setActiveStatus(false);
+
+        bytes32 _policyId = policy.policyId();
+        delete policyIdToPolicy[_policyId];
         emit Events.DeactivatedPolicy(_policy);
     }
 
@@ -173,5 +180,9 @@ contract Kernal is AccessControl {
 
     function getModuleDependents(Keycode _keycode) external view returns (address[] memory) {
         return moduleDependents[_keycode];
+    }
+
+    function getPolicy(bytes32 _policyId) external view returns (address) {
+        return policyIdToPolicy[_policyId];
     }
 }

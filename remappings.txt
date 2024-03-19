@@ -9,3 +9,4 @@ prb-test/=lib/prb-test/src/
 @chainlink/=lib/chainlink/contracts/src/
 @tokenbound/=lib/tokenbound/src/
 @erc6551/=lib/erc6551/src/
+@safe-contracts/=lib/safe-smart-account/contracts/

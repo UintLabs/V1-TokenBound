@@ -10,6 +10,7 @@ abstract contract Policy {
     Kernal immutable kernal;
     
     
+    
     Keycode[] private keycodeDependency;
     bool public isActive;
 
@@ -32,6 +33,8 @@ abstract contract Policy {
         view
         virtual
         returns (Permission[] memory requests);
+
+    function policyId() public view virtual returns (bytes32);
 
     /**
      * @dev Used by a policy to get the current address of a module
