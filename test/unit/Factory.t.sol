@@ -7,11 +7,13 @@ import { Kernal } from "src/Kernal.sol";
 import { VaultModule } from "src/Modules/VaultModule.sol";
 import { Factory } from "src/Policies/Factory.sol";
 import { Guardian } from "src/Policies/Guardian.sol";
-import { DeployKernal } from "script/DeployKernal.s.sol";
-import { DeployVaultModule } from "script/DeployVaultModule.s.sol";
-import { DeployFactory } from "script/DeployFactory.s.sol";
-import { DeployGuardian } from "script/DeployGuardian.s.sol";
-import { DeploySupportMocks } from "script/DeploySupportMocks.s.sol";
+import { Recovery } from "src/Policies/Recovery.sol";
+import { DeployKernal } from "script/deploy/DeployKernal.s.sol";
+import { DeployVaultModule } from "script/deploy/DeployVaultModule.s.sol";
+import { DeployFactory } from "script/deploy/DeployFactory.s.sol";
+import { DeployGuardian } from "script/deploy/DeployGuardian.s.sol";
+import { DeployRecovery } from "script/deploy/DeployRecovery.s.sol";
+import { DeploySupportMocks } from "script/deploy/DeploySupportMocks.s.sol";
 import { HelpersConfig } from "script/helpers/HelpersConfig.s.sol";
 import { Errors } from "src/utils/Errors.sol";
 import { Events } from "src/utils/Events.sol";
@@ -34,6 +36,7 @@ contract FactoryTest is Test, HelpersConfig {
 
     Kernal kernal;
     Guardian guardian;
+    Recovery recovery;
     VaultModule vaultModule;
     Factory factory;
     SafeProxyFactory safeFactory;
@@ -44,6 +47,7 @@ contract FactoryTest is Test, HelpersConfig {
         DeployVaultModule deployVaultModule = new DeployVaultModule();
         DeployFactory deployFactory = new DeployFactory();
         DeployGuardian deployGuardian = new DeployGuardian();
+        DeployRecovery deployRecovery = new DeployRecovery();
         DeploySupportMocks deploySupportMocks = new DeploySupportMocks();
 
         // Deploy Safe infra
@@ -55,6 +59,7 @@ contract FactoryTest is Test, HelpersConfig {
         vaultModule = deployVaultModule.deploy(address(kernal));
         factory = deployFactory.deploy(address(kernal));
         guardian = deployGuardian.deploy(address(kernal));
+        recovery = deployRecovery.deploy(address(kernal));
 
         config = getConfig();
         vm.startPrank(config.moduleAdmin);
@@ -64,6 +69,7 @@ contract FactoryTest is Test, HelpersConfig {
         vm.startPrank(config.policyAdmin);
         kernal.addPolicy(address(factory));
         kernal.addPolicy(address(guardian));
+        kernal.addPolicy(address(recovery));
         vm.stopPrank();
     }
 
@@ -77,7 +83,7 @@ contract FactoryTest is Test, HelpersConfig {
     function test_createVault_StateUpdated() external {
         uint priorNonce = vaultModule.getNonce(vaultMinter);
         vm.startPrank(vaultMinter);
-        address account = factory.createVault(false, guardian);
+        address account = factory.createVault(false, vaultGuardian);
         vm.stopPrank();
         // Updated Nonce
         uint postNonce = vaultModule.getNonce(vaultMinter);
@@ -88,6 +94,6 @@ contract FactoryTest is Test, HelpersConfig {
         VaultModule.Vault memory vaultDetails = vaultModule.getVault(account);
 
         assertEq(vaultDetails.owner, vaultMinter);
-        assertEq(vaultDetails.guardian, guardian);
+        assertEq(vaultDetails.guardian, vaultGuardian);
     }
 }

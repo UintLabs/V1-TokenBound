@@ -36,7 +36,8 @@ contract VaultModule is Module {
     function INIT() external override onlyKernal { }
 
     function incrementNonce(address user) external permissioned {
-        userToNonce[user] += userToNonce[user];
+        uint256 nonce = userToNonce[user];
+        userToNonce[user] = nonce + 1;
     }
 
     function addVault(address vaultAccount, address owner, address guardian) external permissioned {
@@ -74,7 +75,7 @@ contract VaultModule is Module {
         return userToNonce[user];
     }
 
-    function getVault(address vaultAddress) external view  returns (Vault memory) {
+    function getVault(address vaultAddress) external view returns (Vault memory) {
         return vaultToDetails[vaultAddress];
     }
 }
