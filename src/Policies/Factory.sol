@@ -52,14 +52,14 @@ contract Factory is Initializable, UUPSUpgradeable, Policy {
 
     /// @notice Creates a Vault, mints the respective NFT for it and diverts the minting fee to the FeePool
     /// @param isProVault boolean which specifies if the creating vault is a pro vault or not
-    function createVault(bool isProVault) external payable isMintable returns (address account) {
+    function createVault(bool isProVault, address guardian) external payable isMintable returns (address account) {
         if (isProVault) {
             if (msg.value < getWeiPerUsd()) {
                 revert Errors.Factory_NotEnoughEthSent();
             }
-            account = _mintProVault();
+            account = _mintProVault(guardian);
         } else {
-            account = _mintVault();
+            account = _mintVault(guardian);
         }
 
         emit Events.Factory_VaultCreated(address(account));
@@ -69,7 +69,7 @@ contract Factory is Initializable, UUPSUpgradeable, Policy {
     /////// Internal Functions ////////
     ///////////////////////////////////
 
-    function _mintProVault() internal returns (address /**_account*/) {
+    function _mintProVault(address guardian) internal returns (address /**_account*/) {
         revert Errors.Factory_ProVaultNotMintable();
     }
 
@@ -77,7 +77,7 @@ contract Factory is Initializable, UUPSUpgradeable, Policy {
         ISafe(address(this)).setGuard(_guard);
     }
 
-    function _mintVault() internal returns (address _account) {
+    function _mintVault(address guardian) internal returns (address _account) {
         SafeProxyFactory safeFactory = vaultStorage.safeFactory();
         address safeImplementation = address(vaultStorage.safeImplementation());
 
@@ -86,6 +86,8 @@ contract Factory is Initializable, UUPSUpgradeable, Policy {
 
         SafeProxy accountProxy = safeFactory.createProxyWithNonce(safeImplementation, initializer, nonce);
         _account = address(accountProxy);
+
+        vaultStorage.addVault(_account, msg.sender, guardian);
     }
 
     function _getNonce(address _user) internal returns (uint256 nonce) {
@@ -167,6 +169,7 @@ contract Factory is Initializable, UUPSUpgradeable, Policy {
         requests = new Permission[](2);
         requests[0] = Permission(Keycode.wrap("VTM"), VaultModule.addVault.selector);
         requests[1] = Permission(Keycode.wrap("VTM"), VaultModule.incrementNonce.selector);
+        
     }
 
     function policyId() public pure override returns (bytes32) {
