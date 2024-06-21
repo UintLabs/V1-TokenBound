@@ -51,7 +51,7 @@ interface ITokenShieldSubscription {
                            Mint Function
     //////////////////////////////////////////////////////////////*/
 
-    function createSubscription() external payable;
+    function createVault() external payable;
 
     /*//////////////////////////////////////////////////////////////
                            Mint Function

@@ -65,7 +65,7 @@ contract RecoveryManagerTest is Test, HelpersConfig, CreateVault {
 
     modifier mintVault() {
         hoax(vaultMinter);
-        address _vaultAddress = tokenShieldNft.createSubscription{ value: 0.0012 ether }();
+        address _vaultAddress = tokenShieldNft.createVault{ value: 0.0012 ether }();
         vault = Vault(payable(_vaultAddress));
         _;
     }

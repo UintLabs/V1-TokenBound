@@ -125,7 +125,7 @@ contract TokenShieldSubscription is ERC721Upgradeable, AccessControlUpgradeable,
                            Mint Function
     //////////////////////////////////////////////////////////////*/
 
-    function createSubscription() external payable mintInitiated returns (address account) {
+    function createVault() external payable mintInitiated returns (address account) {
         if (msg.value < getWeiPerUsd()) {
             revert NotEnoughEthSent();
         }

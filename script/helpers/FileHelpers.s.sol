@@ -19,6 +19,7 @@ contract FileHelpers is Script {
         string memory root = vm.projectRoot();
         string memory anvilFilePath = string.concat(root, "/deployments/anvilLatest");
         string memory sepoliaFilePath = string.concat(root, "/deployments/sepoliaLatest");
+        string memory scrollFilePath = string.concat(root, "/deployments/scrollLatest");
         /* solhint-disable */
         string memory registryTxt = string.concat("ERC6551Registry-", Strings.toHexString(registry));
         string memory guardianTxt = string.concat("guardian-", Strings.toHexString(guardian));
@@ -33,6 +34,14 @@ contract FileHelpers is Script {
             vm.writeLine(sepoliaFilePath, vaultTxt);
             vm.writeLine(sepoliaFilePath, recoveryManagerTxt);
             vm.closeFile(sepoliaFilePath);
+        } else if (block.chainid == 534_351) {
+            removeFileIfExists(scrollFilePath);
+            vm.writeLine(scrollFilePath, registryTxt);
+            vm.writeLine(scrollFilePath, guardianTxt);
+            vm.writeLine(scrollFilePath, tokenShieldNftTxt);
+            vm.writeLine(scrollFilePath, vaultTxt);
+            vm.writeLine(scrollFilePath, recoveryManagerTxt);
+            vm.closeFile(scrollFilePath);
         } else {
             removeFileIfExists(anvilFilePath);
             vm.writeLine(anvilFilePath, registryTxt);
