@@ -1,5 +1,7 @@
 -include .env
 
+install:; forge install && pnpm install
+
 build:; forge build
 
 deployVault:; forge script script/DeployVault.s.sol:DeployVault --rpc-url=http:127.0.0.1:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvv

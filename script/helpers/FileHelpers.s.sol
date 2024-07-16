@@ -2,9 +2,9 @@
 pragma solidity ^0.8.19;
 
 import { Script } from "forge-std/Script.sol";
-import { Strings } from "openzeppelin-contracts/utils/Strings.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
-contract FileHelpers is Script {
+abstract contract FileHelpers is Script {
     using Strings for string;
 
     function writeLatestFile(
