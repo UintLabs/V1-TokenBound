@@ -6,7 +6,9 @@ import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/Sig
 import { ValidationData } from "@ERC4337/account-abstraction/contracts/core/Helpers.sol";
 import { IValidator } from "erc7579/interfaces/IERC7579Module.sol";
 
+
 contract MockGuardianValidator is IValidator {
+    
     type Validation is uint256;
 
     error GuardianValidator_LengthMismatch();
@@ -17,10 +19,9 @@ contract MockGuardianValidator is IValidator {
     Validation internal constant VALIDATION_FAILED = Validation.wrap(1);
 
     function validateUserOp(
-        PackedUserOperation calldata,
-        /**
-         * userOp
-         */
+        PackedUserOperation calldata
+         userOp,
+         
         bytes32
     )
         external
@@ -33,6 +34,8 @@ contract MockGuardianValidator is IValidator {
             uint256
         )
     {
+
+        
         return Validation.unwrap(VALIDATION_SUCCESS);
     }
 
