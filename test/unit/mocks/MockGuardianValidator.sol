@@ -25,6 +25,7 @@ contract MockGuardianValidator is IValidator {
     )
         external
         override
+        pure
         returns (
             /**
              * userOpHash
