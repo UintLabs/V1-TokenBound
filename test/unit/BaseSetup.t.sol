@@ -91,7 +91,7 @@ contract BaseSetup is Test {
             ModuleInit[] memory executors,
             ModuleInit[] memory fallbacks,
             ModuleInit[] memory hooks
-        ) = getValidatorExecutorsEtc();
+        ) = getValidatorExecutorsEtc(signer1.addr);
 
         // Create a UserOp with sender and validator, still have to fill initCode, calldata and signature
         PackedUserOperation memory userOp = getDefaultUserOp(address(0), address(defaultValidator));
@@ -176,7 +176,9 @@ contract BaseSetup is Test {
         });
     }
 
-    function getValidatorExecutorsEtc()
+    function getValidatorExecutorsEtc(
+        address _owner
+    )
         internal
         view
         virtual
@@ -188,7 +190,8 @@ contract BaseSetup is Test {
         )
     {
         validators = new ModuleInit[](1);
-        validators[0] = ModuleInit({ module: address(defaultValidator), initData: bytes("") });
+        bytes memory validatorInitData = abi.encode(_owner);
+        validators[0] = ModuleInit({ module: address(defaultValidator), initData: validatorInitData });
         executors = new ModuleInit[](1);
         executors[0] = ModuleInit({ module: address(defaultExecutor), initData: bytes("") });
         fallbacks = new ModuleInit[](0);
