@@ -11,7 +11,6 @@ import { ISafe2 as ISafe } from "../interfaces/ISafe2.sol";
 import { UnsignedUserOperation } from "../utils/DataTypes.sol";
 import "../utils/Errors.sol";
 
-
 // import { console } from "forge-std/console.sol";
 
 contract GuardianValidator is IValidator, EIP712 {

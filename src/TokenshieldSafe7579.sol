@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL3
 pragma solidity 0.8.25;
 
-
 import { IERC7579Account, Execution } from "safe7579/src/interfaces/IERC7579Account.sol";
 import {
     CallType,
@@ -27,10 +26,7 @@ import { Initializer } from "safe7579/src/core/Initializer.sol";
 import { SafeOp } from "safe7579/src/core/SafeOp.sol";
 import { ISafe } from "safe7579/src/interfaces/ISafe.sol";
 import { ISafe7579 } from "safe7579/src/ISafe7579.sol";
-import {
-    PackedUserOperation,
-    UserOperationLib
-} from "@ERC4337/account-abstraction/contracts/core/UserOperationLib.sol";
+import { PackedUserOperation, UserOperationLib } from "@ERC4337/account-abstraction/contracts/core/UserOperationLib.sol";
 import { _packValidationData } from "@ERC4337/account-abstraction/contracts/core/Helpers.sol";
 import { IEntryPoint } from "@ERC4337/account-abstraction/contracts/interfaces/IEntryPoint.sol";
 import { IERC1271 } from "safe7579/src/interfaces/IERC1271.sol";
@@ -40,13 +36,13 @@ uint256 constant MULTITYPE_MODULE = 0;
 
 /**
  * @title ERC7579 Adapter for Safe accounts.
- * creates full ERC7579 compliance to Safe accounts forked from the rhinestone.wtf team 
+ * creates full ERC7579 compliance to Safe accounts forked from the rhinestone.wtf team
  * @author Tokenshield | 0xnightfall.eth
  * @dev This contract is a Safe account implementation that supports ERC7579 operations.
  *    In order to facilitate full ERC7579 compliance, the contract implements the IERC7579Account
  *    interface. It is forked from the Safe7579 implementation of the rhinestone.wtf team to add
  *    default Validators and other features
- * 
+ *
  */
 contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl, Initializer {
     using ExecutionLib for bytes;
@@ -55,8 +51,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
         0x47e79534a245952e8b16893a336b85a3d9ea9fa8c573f3d803afb92a79469218;
 
     // keccak256("SafeMessage(bytes message)");
-    bytes32 private constant SAFE_MSG_TYPEHASH =
-        0x60b3cbf8b4a223d68d641b3b6ddf9a298e7f33710cf3d3a9d1146b5a6150fbca;
+    bytes32 private constant SAFE_MSG_TYPEHASH = 0x60b3cbf8b4a223d68d641b3b6ddf9a298e7f33710cf3d3a9d1146b5a6150fbca;
     // keccak256("safeSignature(bytes32,bytes32,bytes,bytes)");
     bytes4 private constant SAFE_SIGNATURE_MAGIC_VALUE = 0x5fd7e97d;
 
@@ -91,8 +86,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
             }
             // DEFAULT EXEC & SINGLE CALL
             else if (callType == CALLTYPE_SINGLE) {
-                (address target, uint256 value, bytes calldata callData) =
-                    executionCalldata.decodeSingle();
+                (address target, uint256 value, bytes calldata callData) = executionCalldata.decodeSingle();
                 _exec(safe, target, value, callData);
             }
             // DEFAULT EXEC & DELEGATECALL
@@ -117,8 +111,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
             }
             // TRY EXEC & SINGLE CALL
             else if (callType == CALLTYPE_SINGLE) {
-                (address target, uint256 value, bytes calldata callData) =
-                    executionCalldata.decodeSingle();
+                (address target, uint256 value, bytes calldata callData) = executionCalldata.decodeSingle();
                 _tryExec(safe, target, value, callData);
             }
             // TRY EXEC & DELEGATECALL
@@ -191,8 +184,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
             }
             // DEFAULT EXEC & SINGLE CALL
             else if (callType == CALLTYPE_SINGLE) {
-                (address target, uint256 value, bytes calldata callData) =
-                    executionCalldata.decodeSingle();
+                (address target, uint256 value, bytes calldata callData) = executionCalldata.decodeSingle();
                 returnDatas = new bytes[](1);
                 returnDatas[0] = _execReturn(ISafe(msg.sender), target, value, callData);
             }
@@ -219,8 +211,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
             }
             // TRY EXEC & SINGLE CALL
             else if (callType == CALLTYPE_SINGLE) {
-                (address target, uint256 value, bytes calldata callData) =
-                    executionCalldata.decodeSingle();
+                (address target, uint256 value, bytes calldata callData) = executionCalldata.decodeSingle();
                 returnDatas = new bytes[](1);
                 returnDatas[0] = _tryExecReturn(ISafe(msg.sender), target, value, callData);
             }
@@ -280,12 +271,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
 
         // pay prefund
         if (missingAccountFunds != 0) {
-            _exec({
-                safe: ISafe(msg.sender),
-                target: entryPoint(),
-                value: missingAccountFunds,
-                callData: ""
-            });
+            _exec({ safe: ISafe(msg.sender), target: entryPoint(), value: missingAccountFunds, callData: "" });
         }
     }
 
@@ -293,51 +279,29 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
      * Function used as signature check fallback, if no valid validation module was selected.
      * will use safe's ECDSA multisig. This code was copied of Safe's ERC4337 module
      */
-    function _validateSignatures(PackedUserOperation calldata userOp)
-        internal
-        view
-        returns (uint256 validationData)
-    {
-        (bytes memory operationData, uint48 validAfter, uint48 validUntil, bytes memory signatures)
-        = getSafeOp(userOp, entryPoint());
-        try ISafe((msg.sender)).checkSignatures(keccak256(operationData), operationData, signatures)
-        {
+    function _validateSignatures(PackedUserOperation calldata userOp) internal view returns (uint256 validationData) {
+        (bytes memory operationData, uint48 validAfter, uint48 validUntil, bytes memory signatures) =
+            getSafeOp(userOp, entryPoint());
+        try ISafe((msg.sender)).checkSignatures(keccak256(operationData), operationData, signatures) {
             // The timestamps are validated by the entry point,
             // therefore we will not check them again
-            validationData = _packValidationData({
-                sigFailed: false,
-                validUntil: validUntil,
-                validAfter: validAfter
-            });
+            validationData = _packValidationData({ sigFailed: false, validUntil: validUntil, validAfter: validAfter });
         } catch {
-            validationData = _packValidationData({
-                sigFailed: true,
-                validUntil: validUntil,
-                validAfter: validAfter
-            });
+            validationData = _packValidationData({ sigFailed: true, validUntil: validUntil, validAfter: validAfter });
         }
     }
 
     /**
      * @inheritdoc ISafe7579
      */
-    function isValidSignature(
-        bytes32 hash,
-        bytes calldata data
-    )
-        external
-        view
-        returns (bytes4 magicValue)
-    {
+    function isValidSignature(bytes32 hash, bytes calldata data) external view returns (bytes4 magicValue) {
         ISafe safe = ISafe(msg.sender);
 
         // check for safe's approved hashes
         if (data.length == 0) {
             bytes32 messageHash = keccak256(
                 EIP712.encodeMessageData(
-                    safe.domainSeparator(),
-                    SAFE_MSG_TYPEHASH,
-                    abi.encode(keccak256(abi.encode(hash)))
+                    safe.domainSeparator(), SAFE_MSG_TYPEHASH, abi.encode(keccak256(abi.encode(hash)))
                 )
             );
 
@@ -364,9 +328,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
         bytes memory ret = _staticcallReturn({
             safe: ISafe(msg.sender),
             target: validationModule,
-            callData: abi.encodeCall(
-                IValidator.isValidSignatureWithSender, (_msgSender(), hash, data[20:])
-            )
+            callData: abi.encodeCall(IValidator.isValidSignatureWithSender, (_msgSender(), hash, data[20:]))
         });
         magicValue = abi.decode(ret, (bytes4));
     }
@@ -405,9 +367,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
         _delegatecall({
             safe: ISafe(msg.sender),
             target: UTIL,
-            callData: abi.encodeCall(
-                ModuleInstallUtil.installModule, (moduleType, module, moduleInitData)
-            )
+            callData: abi.encodeCall(ModuleInstallUtil.installModule, (moduleType, module, moduleInitData))
         });
     }
 
@@ -447,9 +407,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
         _tryDelegatecall({
             safe: ISafe(msg.sender),
             target: UTIL,
-            callData: abi.encodeCall(
-                ModuleInstallUtil.unInstallModule, (moduleType, module, moduleDeInitData)
-            )
+            callData: abi.encodeCall(ModuleInstallUtil.unInstallModule, (moduleType, module, moduleDeInitData))
         });
     }
 
@@ -501,10 +459,7 @@ library EIP712 {
         returns (bytes memory)
     {
         return abi.encodePacked(
-            bytes1(0x19),
-            bytes1(0x01),
-            domainSeparator,
-            keccak256(abi.encodePacked(typeHash, message))
+            bytes1(0x19), bytes1(0x01), domainSeparator, keccak256(abi.encodePacked(typeHash, message))
         );
     }
 }

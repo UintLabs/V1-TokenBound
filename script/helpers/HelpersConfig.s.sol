@@ -80,7 +80,7 @@ abstract contract HelpersConfig is Script {
         });
     }
 
-    function getScrollConfig() internal view  returns (ChainConfig memory) {
+    function getScrollConfig() internal view returns (ChainConfig memory) {
         address adminAddress = vm.envAddress("SEPOLIA_DEFAULT_ADMIN_ADDRESS");
         address guardSigner = vm.envAddress("SEPOLIA_GUARDIAN_SIGNER");
         address guardSetter = vm.envAddress("SEPOLIA_GUARDIAN_SETTER");
@@ -94,6 +94,5 @@ abstract contract HelpersConfig is Script {
             domainName: "TokenShield",
             domainVersion: "1"
         });
-    
     }
 }

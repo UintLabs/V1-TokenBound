@@ -4,7 +4,7 @@ pragma solidity 0.8.25;
 import { IExecutor } from "erc7579/interfaces/IERC7579Module.sol";
 
 contract RecoveryModule is IExecutor {
-    mapping (address account => bool) private _isInitialized;
+    mapping(address account => bool) private _isInitialized;
     /**
      * @dev This function is called by the smart account during installation of the module
      *  arbitrary data that may be required on the module during `onInstall`
@@ -12,9 +12,15 @@ contract RecoveryModule is IExecutor {
      *
      * MUST revert on error (i.e. if module is already enabled)
      */
-    function onInstall(bytes calldata /**data*/) external {
+
+    function onInstall(bytes calldata)
+        /**
+         * data
+         */
+        external
+    {
         _isInitialized[msg.sender] = true;
-     }
+    }
 
     /**
      * @dev This function is called by the smart account during uninstallation of the module
@@ -36,7 +42,7 @@ contract RecoveryModule is IExecutor {
     /**
      * @dev Returns if the module was already initialized for a provided smartaccount
      */
-    function isInitialized(address smartAccount) external view returns (bool) { 
+    function isInitialized(address smartAccount) external view returns (bool) {
         return _isInitialized[smartAccount];
     }
 }

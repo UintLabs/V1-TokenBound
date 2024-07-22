@@ -33,7 +33,6 @@ import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-
 contract BaseSetup is Test {
     struct EIP712Domain {
         string name;
@@ -71,7 +70,6 @@ contract BaseSetup is Test {
 
     string domainName = "TokenShield";
     string domainVersion = "1";
-
 
     function setUpEssentialContracts() internal virtual {
         // Setting Up
@@ -305,7 +303,14 @@ contract BaseSetup is Test {
         digest = getTransactionHashWithDomainSeperator(transactionHash, address(defaultValidator));
     }
 
-    function getSignature(PackedUserOperation memory _userOp, Account memory signer, Account memory guardian) internal returns (bytes memory signature){
+    function getSignature(
+        PackedUserOperation memory _userOp,
+        Account memory signer,
+        Account memory guardian
+    )
+        internal
+        returns (bytes memory signature)
+    {
         bytes32 digest = getDigest(_userOp);
 
         (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(signer.key, digest);
@@ -317,7 +322,7 @@ contract BaseSetup is Test {
         // console.logBytes32(s2);
         // console.logUint(v2);
 
-        (address _guardian,,) = ECDSA.tryRecover(digest, v2,r2,s2);
+        (address _guardian,,) = ECDSA.tryRecover(digest, v2, r2, s2);
         assertEq(guardian.addr, _guardian);
     }
 
@@ -338,7 +343,6 @@ contract BaseSetup is Test {
             )
         );
     }
-
 
     function domainSeparator(address verifyingContract) internal view returns (bytes32 domainSeperator) {
         domainSeperator = getDomainHash(

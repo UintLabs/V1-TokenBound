@@ -1,19 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.25;
 
-
 import { BaseSetup } from "./BaseSetup.t.sol";
 import { ExecutionLib } from "erc7579/lib/ExecutionLib.sol";
 import { ModeLib } from "erc7579/lib/ModeLib.sol";
 import { MockERC20Target } from "./mocks/MockERC20Target.sol";
 
 import "safe7579/test/dependencies/EntryPoint.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { IERC7579Account, Execution } from "erc7579/interfaces/IERC7579Account.sol";
 
 contract TokenshieldSafe7579Test is BaseSetup {
-
     Account receiverAddress = makeAccount("RECEIVER_ADDRESS");
 
     function setUp() public {
@@ -33,13 +31,13 @@ contract TokenshieldSafe7579Test is BaseSetup {
         setupAccountWithTx();
     }
 
-    modifier setUpAccount {
+    modifier setUpAccount() {
         // createAndInitialseModules();
         setupAccountWithTx();
         _;
     }
 
-    function test_TestERC20Transfer() setUpAccount external {
+    function test_TestERC20Transfer() external setUpAccount {
         uint256 amountToTransfer = 3 ether;
 
         uint256 priorBalance = target.balanceOf(address(userAccount));
@@ -49,14 +47,10 @@ contract TokenshieldSafe7579Test is BaseSetup {
         // Encode the call into the calldata for the userOp
         bytes memory userOpCalldata = abi.encodeCall(
             IERC7579Account.execute,
-            (
-                ModeLib.encodeSimpleSingle(),
-                ExecutionLib.encodeSingle(address(target), uint256(0), targetCalldata)
-            )
+            (ModeLib.encodeSimpleSingle(), ExecutionLib.encodeSingle(address(target), uint256(0), targetCalldata))
         );
 
-        PackedUserOperation memory userOp =
-            getDefaultUserOp(address(userAccount), address(defaultValidator));
+        PackedUserOperation memory userOp = getDefaultUserOp(address(userAccount), address(defaultValidator));
 
         userOp.initCode = "";
         userOp.callData = userOpCalldata;
@@ -71,10 +65,9 @@ contract TokenshieldSafe7579Test is BaseSetup {
         entrypoint.handleOps(userOps, payable(address(0x69)));
         uint256 postBalance = target.balanceOf(address(userAccount));
         assertEq(priorBalance, postBalance + amountToTransfer);
-
     }
 
-    function test_BatchERC20Transfer() setUpAccount external {
+    function test_BatchERC20Transfer() external setUpAccount {
         uint256 amountToTransfer1 = 1 ether;
         uint256 amountToTransfer2 = 2 ether;
         uint256 amountToTransfer3 = 3 ether;
@@ -84,36 +77,30 @@ contract TokenshieldSafe7579Test is BaseSetup {
         Account memory receiver3 = makeAccount("RECEIVER_3");
 
         uint256 priorBalance = target.balanceOf(address(userAccount));
-        
+
         // Create Transactions
         Execution[] memory txs = new Execution[](3);
         txs[0] = Execution({
-            target:address(target),
+            target: address(target),
             value: uint256(0),
             callData: abi.encodeCall(IERC20.transfer, (receiver1.addr, amountToTransfer1))
         });
         txs[1] = Execution({
-            target:address(target),
+            target: address(target),
             value: uint256(0),
             callData: abi.encodeCall(IERC20.transfer, (receiver2.addr, amountToTransfer2))
         });
         txs[2] = Execution({
-            target:address(target),
+            target: address(target),
             value: uint256(0),
             callData: abi.encodeCall(IERC20.transfer, (receiver3.addr, amountToTransfer3))
         });
 
         // Encode the call into the calldata for the userOp
-        bytes memory userOpCalldata = abi.encodeCall(
-            IERC7579Account.execute,
-            (
-                ModeLib.encodeSimpleBatch(),
-                ExecutionLib.encodeBatch(txs)
-            )
-        );
+        bytes memory userOpCalldata =
+            abi.encodeCall(IERC7579Account.execute, (ModeLib.encodeSimpleBatch(), ExecutionLib.encodeBatch(txs)));
 
-        PackedUserOperation memory userOp =
-            getDefaultUserOp(address(userAccount), address(defaultValidator));
+        PackedUserOperation memory userOp = getDefaultUserOp(address(userAccount), address(defaultValidator));
 
         userOp.initCode = "";
         userOp.callData = userOpCalldata;
@@ -126,16 +113,11 @@ contract TokenshieldSafe7579Test is BaseSetup {
 
         // Send the userOp to the entrypoint
         entrypoint.handleOps(userOps, payable(address(0x69)));
-        
-        assertEq(priorBalance, target.balanceOf(address(userAccount)) + 6 ether);
-        
-        
 
+        assertEq(priorBalance, target.balanceOf(address(userAccount)) + 6 ether);
 
         assertEq(target.balanceOf(receiver1.addr), amountToTransfer1);
         assertEq(target.balanceOf(receiver2.addr), amountToTransfer2);
         assertEq(target.balanceOf(receiver3.addr), amountToTransfer3);
-
-        
     }
 }
