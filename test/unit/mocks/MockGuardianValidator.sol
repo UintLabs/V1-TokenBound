@@ -12,7 +12,8 @@ import { UnsignedUserOperation } from "../../../src/utils/DataTypes.sol";
 import "src/utils/Errors.sol";
 
 
-import { console } from "forge-std/console.sol";
+// import { console } from "forge-std/console.sol";
+
 contract MockGuardianValidator is IValidator, EIP712 {
     // using ECDSA for bytes32;
 
@@ -157,10 +158,10 @@ contract MockGuardianValidator is IValidator, EIP712 {
 
         (signer,,) = ECDSA.tryRecover(digest, v1, r1, s1);
         (address guardianSigner,,) = ECDSA.tryRecover(digest, v2, r2, s2);
-        console.logBytes32(digest);
-        console.logBytes32(r2);
-        console.logBytes32(s2);
-        console.logUint(v2);
+        // console.logBytes32(digest);
+        // console.logBytes32(r2);
+        // console.logBytes32(s2);
+        // console.logUint(v2);
 
         if (signer == address(0) || guardianSigner == address(0)) {
             revert Tokenshield_ZeroAddress();

@@ -312,10 +312,10 @@ contract BaseSetup is Test {
         (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(guardian.key, digest);
         signature = abi.encode(r1, s1, v1, r2, s2, v2);
 
-        console.logBytes32(digest);
-        console.logBytes32(r2);
-        console.logBytes32(s2);
-        console.logUint(v2);
+        // console.logBytes32(digest);
+        // console.logBytes32(r2);
+        // console.logBytes32(s2);
+        // console.logUint(v2);
 
         (address _guardian,,) = ECDSA.tryRecover(digest, v2,r2,s2);
         assertEq(guardian.addr, _guardian);
