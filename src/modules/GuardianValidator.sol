@@ -7,14 +7,14 @@ import { ValidationData } from "@ERC4337/account-abstraction/contracts/core/Help
 import { IValidator } from "erc7579/interfaces/IERC7579Module.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import { ISafe2 as ISafe } from "../../../src/interfaces/ISafe2.sol";
-import { UnsignedUserOperation } from "../../../src/utils/DataTypes.sol";
-import "src/utils/Errors.sol";
+import { ISafe2 as ISafe } from "../interfaces/ISafe2.sol";
+import { UnsignedUserOperation } from "../utils/DataTypes.sol";
+import "../utils/Errors.sol";
 
 
 // import { console } from "forge-std/console.sol";
 
-contract MockGuardianValidator is IValidator, EIP712 {
+contract GuardianValidator is IValidator, EIP712 {
     // using ECDSA for bytes32;
 
     type Validation is uint256;

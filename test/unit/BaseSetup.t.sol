@@ -13,7 +13,7 @@ import { SafeProxy, SafeProxyFactory } from "@safe-global/safe-contracts/contrac
 import { TokenshieldSafe7579 } from "../../src/TokenshieldSafe7579.sol";
 import { Safe7579Launchpad } from "safe7579/src/Safe7579Launchpad.sol";
 
-import { MockGuardianValidator } from "./mocks/MockGuardianValidator.sol";
+import { GuardianValidator } from "src/modules/GuardianValidator.sol";
 import { IEntryPoint } from "account-abstraction/interfaces/IEntryPoint.sol";
 import { IERC7484 } from "safe7579/src/interfaces/IERC7484.sol";
 import { MockRegistry } from "safe7579/test/mocks/MockRegistry.sol";
@@ -59,7 +59,7 @@ contract BaseSetup is Test {
     IEntryPoint entrypoint;
 
     // ERC7579 Validators & Executors
-    MockGuardianValidator defaultValidator;
+    GuardianValidator defaultValidator;
     RecoveryModule defaultExecutor;
     MockRegistry registry;
 
@@ -161,7 +161,7 @@ contract BaseSetup is Test {
 
     function createAndInitialseModules() internal virtual {
         // Create Guardian Validator
-        defaultValidator = new MockGuardianValidator();
+        defaultValidator = new GuardianValidator();
 
         // Initialise GuardianValidator
         setGuardiansForGuardianValidator(address(defaultValidator), guardian1);
@@ -257,7 +257,7 @@ contract BaseSetup is Test {
 
         bool[] memory isEnabled = new bool[](1);
         isEnabled[0] = true;
-        MockGuardianValidator(_validator).setGuardian(guardians, isEnabled);
+        GuardianValidator(_validator).setGuardian(guardians, isEnabled);
     }
 
     function predictAccount(

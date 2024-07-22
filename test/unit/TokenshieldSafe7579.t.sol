@@ -84,11 +84,8 @@ contract TokenshieldSafe7579Test is BaseSetup {
         Account memory receiver3 = makeAccount("RECEIVER_3");
 
         uint256 priorBalance = target.balanceOf(address(userAccount));
-        // Create calldata for the account to execute
-        // bytes memory txCalldata1 = ;
-        // bytes memory txCalldata2 = ;
-        // bytes memory txCalldata3 = ;
-
+        
+        // Create Transactions
         Execution[] memory txs = new Execution[](3);
         txs[0] = Execution({
             target:address(target),
@@ -129,12 +126,10 @@ contract TokenshieldSafe7579Test is BaseSetup {
 
         // Send the userOp to the entrypoint
         entrypoint.handleOps(userOps, payable(address(0x69)));
-        // uint256 postBalance = ;
+        
         assertEq(priorBalance, target.balanceOf(address(userAccount)) + 6 ether);
         
-        // uint256 postBalance1 = ;
-        // uint256 postBalance2 = ;
-        // uint256 postBalance3 = ;
+        
 
 
         assertEq(target.balanceOf(receiver1.addr), amountToTransfer1);
