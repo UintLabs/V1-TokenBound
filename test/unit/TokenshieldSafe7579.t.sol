@@ -35,6 +35,7 @@ contract TokenshieldSafe7579Test is BaseSetup {
     }
 
     modifier setUpAccount {
+        // createAndInitialseModules();
         setupAccountWithTx();
         _;
     }
@@ -60,6 +61,8 @@ contract TokenshieldSafe7579Test is BaseSetup {
 
         userOp.initCode = "";
         userOp.callData = userOpCalldata;
+
+        userOp.signature = getSignature(userOp, signer1, guardian1);
 
         // Create userOps array
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);

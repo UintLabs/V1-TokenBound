@@ -5,3 +5,5 @@ error Tokenshield_Validator_Guardian_InValidThreshold(uint expectedThreshold, ui
 error Tokenshield_ZeroAddress();
 error Tokenshield_EoaNotSupported();
 error Tokenshield_Validator_Guardian_AccountNotInitialized();
+error Tokenshield_InvalidGuardian();
+error Tokenshield_NotValidOwner();

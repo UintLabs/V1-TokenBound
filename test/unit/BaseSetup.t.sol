@@ -6,6 +6,7 @@ import { Test } from "forge-std/Test.sol";
 import "safe7579/test/dependencies/EntryPoint.sol";
 
 import "safe7579/src/DataTypes.sol";
+import { UnsignedUserOperation } from "../../src/utils/DataTypes.sol";
 
 import { Safe } from "@safe-global/safe-contracts/contracts/Safe.sol";
 import { SafeProxy, SafeProxyFactory } from "@safe-global/safe-contracts/contracts/proxies/SafeProxyFactory.sol";
@@ -17,7 +18,7 @@ import { IEntryPoint } from "account-abstraction/interfaces/IEntryPoint.sol";
 import { IERC7484 } from "safe7579/src/interfaces/IERC7484.sol";
 import { MockRegistry } from "safe7579/test/mocks/MockRegistry.sol";
 import { RecoveryModule } from "src/modules/RecoveryModule.sol";
-import { console2 } from "forge-std/console2.sol";
+import { console } from "forge-std/console.sol";
 
 import { ISafe7579 } from "safe7579/src/ISafe7579.sol";
 
@@ -28,8 +29,19 @@ import { ISafe7579 } from "safe7579/src/ISafe7579.sol";
 import { ExecutionLib } from "erc7579/lib/ExecutionLib.sol";
 import { ModeLib } from "erc7579/lib/ModeLib.sol";
 import { IERC7579Account, Execution } from "erc7579/interfaces/IERC7579Account.sol";
+import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
 
 contract BaseSetup is Test {
+    struct EIP712Domain {
+        string name;
+        string version;
+        uint256 chainId;
+        address verifyingContract;
+    }
+
     Account guardian1 = makeAccount("GUARDIAN_1");
     Account guardianSigner = makeAccount("GUARDIAN_SIGNER");
     Account guardianDefaultNominee = makeAccount("GUARDIAN_NOMINEE");
@@ -56,6 +68,10 @@ contract BaseSetup is Test {
 
     // UserAccount
     TokenshieldSafe7579 userAccount;
+
+    string domainName = "TokenShield";
+    string domainVersion = "1";
+
 
     function setUpEssentialContracts() internal virtual {
         // Setting Up
@@ -130,6 +146,8 @@ contract BaseSetup is Test {
 
         userOp.sender = predict;
 
+        userOp.signature = getSignature(userOp, signer1, guardian1);
+
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
         deal(address(userOp.sender), 1 ether);
@@ -176,9 +194,7 @@ contract BaseSetup is Test {
         });
     }
 
-    function getValidatorExecutorsEtc(
-        address _owner
-    )
+    function getValidatorExecutorsEtc(address _owner)
         internal
         view
         virtual
@@ -262,5 +278,100 @@ contract BaseSetup is Test {
             salt: _salt,
             factoryInitializer: _factoryInitializer
         });
+    }
+
+    function getUnsignedUserOp(PackedUserOperation memory _userOp)
+        internal
+        pure
+        returns (UnsignedUserOperation memory unsignedUserOp)
+    {
+        // // Create unsigned UserOp
+        unsignedUserOp = UnsignedUserOperation({
+            sender: _userOp.sender,
+            nonce: _userOp.nonce,
+            initCode: _userOp.initCode,
+            callData: _userOp.callData,
+            accountGasLimits: _userOp.accountGasLimits,
+            preVerificationGas: _userOp.preVerificationGas,
+            gasFees: _userOp.gasFees,
+            paymasterAndData: _userOp.paymasterAndData
+        });
+    }
+
+    function getDigest(PackedUserOperation memory _userOp) internal view returns (bytes32 digest) {
+        UnsignedUserOperation memory unsignedUserOp = getUnsignedUserOp(_userOp);
+        // // Get the EIP712 Hash
+        bytes32 transactionHash = getTransactionHash(unsignedUserOp);
+        digest = getTransactionHashWithDomainSeperator(transactionHash, address(defaultValidator));
+    }
+
+    function getSignature(PackedUserOperation memory _userOp, Account memory signer, Account memory guardian) internal returns (bytes memory signature){
+        bytes32 digest = getDigest(_userOp);
+
+        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(signer.key, digest);
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(guardian.key, digest);
+        signature = abi.encode(r1, s1, v1, r2, s2, v2);
+
+        console.logBytes32(digest);
+        console.logBytes32(r2);
+        console.logBytes32(s2);
+        console.logUint(v2);
+
+        (address _guardian,,) = ECDSA.tryRecover(digest, v2,r2,s2);
+        assertEq(guardian.addr, _guardian);
+    }
+
+    function getTransactionHash(UnsignedUserOperation memory _unsignedUserOp) public pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256(
+                    "UnsignedUserOperation(address sender,uint256 nonce,bytes initCode,bytes callData,bytes32 accountGasLimits,uint256 preVerificationGas,bytes32 gasFees,bytes paymasterAndData)"
+                ),
+                _unsignedUserOp.sender,
+                _unsignedUserOp.nonce,
+                keccak256(bytes(_unsignedUserOp.initCode)),
+                keccak256(bytes(_unsignedUserOp.callData)),
+                _unsignedUserOp.accountGasLimits,
+                _unsignedUserOp.preVerificationGas,
+                _unsignedUserOp.gasFees,
+                keccak256(bytes(_unsignedUserOp.paymasterAndData))
+            )
+        );
+    }
+
+
+    function domainSeparator(address verifyingContract) internal view returns (bytes32 domainSeperator) {
+        domainSeperator = getDomainHash(
+            EIP712Domain({
+                name: domainName,
+                version: domainVersion,
+                chainId: block.chainid,
+                verifyingContract: verifyingContract
+            })
+        );
+    }
+
+    function getDomainHash(EIP712Domain memory domain) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes(domain.name)),
+                keccak256(bytes(domain.version)),
+                domain.chainId,
+                domain.verifyingContract
+            )
+        );
+    }
+
+    function getTransactionHashWithDomainSeperator(
+        bytes32 transactionHash,
+        address verifyingContract
+    )
+        internal
+        view
+        returns (bytes32)
+    {
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator(verifyingContract), transactionHash));
+        return digest;
     }
 }

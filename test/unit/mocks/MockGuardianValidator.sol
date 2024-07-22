@@ -8,11 +8,13 @@ import { IValidator } from "erc7579/interfaces/IERC7579Module.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import { ISafe2 as ISafe } from "../../../src/interfaces/ISafe2.sol";
-// import { Tx } from "../../../src/utils/DataTypes.sol";
+import { UnsignedUserOperation } from "../../../src/utils/DataTypes.sol";
 import "src/utils/Errors.sol";
 
+
+import { console } from "forge-std/console.sol";
 contract MockGuardianValidator is IValidator, EIP712 {
-    using ECDSA for bytes32;
+    // using ECDSA for bytes32;
 
     type Validation is uint256;
 
@@ -111,46 +113,76 @@ contract MockGuardianValidator is IValidator, EIP712 {
             }
 
             accountStatus[_userOp.sender] = AccountInitialization.Initialized;
+            address signer = checkSignature(_userOp);
+            if (signer != owner) {
+                revert Tokenshield_NotValidOwner();
+            }
         } else if (currentAccountStatus == AccountInitialization.Initialized) {
             // Check Threshold is one
             ISafe account = ISafe(_userOp.sender);
             uint256 threshold = account.getThreshold();
 
-            // bool isOwner = account.isOwner(_userOp.sender);
-            owner = address(2); //Temperary
-
             if (threshold != 1) {
                 revert Tokenshield_Validator_Guardian_InValidThreshold(1, threshold);
             }
+
+            address signer = checkSignature(_userOp);
+            if (!account.isOwner(signer)) {
+                revert Tokenshield_NotValidOwner();
+            }
         }
 
-        if (owner == address(0)) revert Tokenshield_ZeroAddress();
-
-        // // Create Transaction Object
-        // Tx memory transaction = Tx(
-        //     to: _userOp.
-        // )
-        // // Get the EIP712 Hash
-        // bytes32 transactionHash = getTransactionHash(transaction);
-        // bytes32 digest = _hashTypedDataV4(transactionHash);
-        // (bytes32 r1, bytes32 s1, uint8 v1, bytes32 r, bytes32 s, uint8 v) = abi.decode(_userOp.signature,);
-
-        // bool isOwnerSignature = digest.tryRecover(_userOp.signature);
-        // bool isGuardianSignature = SignatureChecker.isValidSignatureNow(guardianSigner, dataHash,
-        // guardianSignerSignature);
+        // if (owner == address(0)) revert Tokenshield_ZeroAddress();
 
         return Validation.unwrap(VALIDATION_SUCCESS);
     }
 
-    // function getTransactionHash(Tx memory _transaction) public pure returns (bytes32) {
-    //     return keccak256(
-    //         abi.encode(
-    //             keccak256("Tx(address to,uint256 value,uint256 nonce,bytes data)"),
-    //             _transaction.to,
-    //             _transaction.value,
-    //             _transaction.nonce,
-    //             keccak256(bytes(_transaction.data))
-    //         )
-    //     );
-    // }
+    function checkSignature(PackedUserOperation calldata _userOp) public view returns (address signer) {
+        // // Create unsigned UserOp
+        UnsignedUserOperation memory unsignedUserOp = UnsignedUserOperation({
+            sender: _userOp.sender,
+            nonce: _userOp.nonce,
+            initCode: _userOp.initCode,
+            callData: _userOp.callData,
+            accountGasLimits: _userOp.accountGasLimits,
+            preVerificationGas: _userOp.preVerificationGas,
+            gasFees: _userOp.gasFees,
+            paymasterAndData: _userOp.paymasterAndData
+        });
+        // // Get the EIP712 Hash
+        bytes32 transactionHash = getTransactionHash(unsignedUserOp);
+        bytes32 digest = _hashTypedDataV4(transactionHash);
+        (bytes32 r1, bytes32 s1, uint8 v1, bytes32 r2, bytes32 s2, uint8 v2) =
+            abi.decode(_userOp.signature, (bytes32, bytes32, uint8, bytes32, bytes32, uint8));
+
+        (signer,,) = ECDSA.tryRecover(digest, v1, r1, s1);
+        (address guardianSigner,,) = ECDSA.tryRecover(digest, v2, r2, s2);
+        console.logBytes32(digest);
+        console.logBytes32(r2);
+        console.logBytes32(s2);
+        console.logUint(v2);
+
+        if (signer == address(0) || guardianSigner == address(0)) {
+            revert Tokenshield_ZeroAddress();
+        }
+        if (!isGuardianEnabled[guardianSigner]) revert Tokenshield_InvalidGuardian();
+    }
+
+    function getTransactionHash(UnsignedUserOperation memory _unsignedUserOp) public pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256(
+                    "UnsignedUserOperation(address sender,uint256 nonce,bytes initCode,bytes callData,bytes32 accountGasLimits,uint256 preVerificationGas,bytes32 gasFees,bytes paymasterAndData)"
+                ),
+                _unsignedUserOp.sender,
+                _unsignedUserOp.nonce,
+                keccak256(bytes(_unsignedUserOp.initCode)),
+                keccak256(bytes(_unsignedUserOp.callData)),
+                _unsignedUserOp.accountGasLimits,
+                _unsignedUserOp.preVerificationGas,
+                _unsignedUserOp.gasFees,
+                keccak256(bytes(_unsignedUserOp.paymasterAndData))
+            )
+        );
+    }
 }
