@@ -12,6 +12,7 @@ import "safe7579/test/dependencies/EntryPoint.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { IERC7579Account, Execution } from "erc7579/interfaces/IERC7579Account.sol";
+import { console } from "forge-std/console.sol";
 
 contract TokenshieldSafe7579Test is BaseSetup {
     Account receiverAddress = makeAccount("RECEIVER_ADDRESS");
@@ -31,6 +32,18 @@ contract TokenshieldSafe7579Test is BaseSetup {
 
     function test_MockERC20_Mint() external {
         setupAccountWithTx();
+    }
+
+    function test_GuardSet() external {
+        setupAccountWithTx();
+        // keccak256("guard_manager.guard.address")
+        bytes32 GUARD_STORAGE_SLOT = 0x4a204f620c8c5ccdca3fd54d003badd85ba500436a431f0cbda4f558c93c34c8;
+        bytes32 slotData = vm.load(address(userAccount), GUARD_STORAGE_SLOT);
+        address guardAddress = address(uint160(uint256(slotData)));
+        // console.logBytes32(slotData);
+        // console.log(guardAddress);
+
+        assertEq(guardAddress, address(blockSafeGuard));
     }
 
     modifier setUpAccount() {
@@ -125,9 +138,9 @@ contract TokenshieldSafe7579Test is BaseSetup {
 
     function test_BatchApproveAndDeposit() external setUpAccount {
         uint256 amountToDeposit = 2 ether;
-     
+
         MockDepositTarget depositTarget = new MockDepositTarget();
-        
+
         uint256 priorBalance = target.balanceOf(address(userAccount));
 
         // Create Transactions

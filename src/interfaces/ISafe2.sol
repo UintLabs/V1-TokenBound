@@ -16,4 +16,6 @@ interface ISafe2 is ISafe {
     function getThreshold() external view returns (uint256);
 
     function isOwner(address owner) external view returns (bool);
+
+    // function getGuard() internal view returns (address guard);
 }
