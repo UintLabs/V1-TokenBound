@@ -5,8 +5,6 @@ import "@safe-global/safe-contracts/contracts/common/Enum.sol";
 import { Guard } from "@safe-global/safe-contracts/contracts/base/GuardManager.sol";
 
 contract BlockGuardSetter {
-    
-
     event ChangedGuard(address indexed guard);
 
     // keccak256("guard_manager.guard.address")
