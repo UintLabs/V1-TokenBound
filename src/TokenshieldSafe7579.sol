@@ -64,7 +64,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
     )
         external
         withHook(IERC7579Account.execute.selector)
-        onlyEntryPoint
+        onlyEntryPointOrSelf
     {
         CallType callType;
         ExecType execType;
@@ -244,7 +244,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
         uint256 missingAccountFunds
     )
         external
-        onlyEntryPoint
+        onlyEntryPointOrSelf
         returns (uint256 validSignature)
     {
         address validator;
@@ -344,7 +344,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
         external
         override
         withHook(IERC7579Account.installModule.selector)
-        onlyEntryPoint
+        onlyEntryPointOrSelf
     {
         // internal install functions will decode the initData param, and return sanitized
         // moduleInitData. This is the initData that will be passed to Module.onInstall()
@@ -382,7 +382,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
         external
         override
         tryWithHook(module, IERC7579Account.uninstallModule.selector)
-        onlyEntryPoint
+        onlyEntryPointOrSelf
     {
         // internal uninstall functions will decode the deInitData param, and return sanitized
         // moduleDeInitData. This is the initData that will be passed to Module.onUninstall()

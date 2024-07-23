@@ -14,6 +14,8 @@ import { TokenshieldSafe7579 } from "../../src/TokenshieldSafe7579.sol";
 import { Safe7579Launchpad } from "safe7579/src/Safe7579Launchpad.sol";
 
 import { GuardianValidator } from "src/modules/GuardianValidator.sol";
+import { BlockGuardSetter } from "src/guard/BlockGuardSetter.sol";
+import { BlockSafeGuard } from "src/guard/BlockSafeGuard.sol";
 import { IEntryPoint } from "account-abstraction/interfaces/IEntryPoint.sol";
 import { IERC7484 } from "safe7579/src/interfaces/IERC7484.sol";
 import { MockRegistry } from "safe7579/test/mocks/MockRegistry.sol";
@@ -50,6 +52,8 @@ contract BaseSetup is Test {
     SafeProxyFactory safeProxyFactory;
     TokenshieldSafe7579 tsSafe;
     Safe7579Launchpad launchpad;
+    BlockGuardSetter guardSetter;
+    BlockSafeGuard blockSafeGuard;
 
     // Account
     Account signer1 = makeAccount("SIGNER_1");
@@ -87,6 +91,10 @@ contract BaseSetup is Test {
         // ERC7579 Adapter for Safe
         tsSafe = new TokenshieldSafe7579();
         launchpad = new Safe7579Launchpad(address(entrypoint), IERC7484(address(registry)));
+
+        // Setting Up Guard and guard Setter
+        guardSetter = new BlockGuardSetter();
+        blockSafeGuard = new BlockSafeGuard();
     }
 
     function setupAccountWithTx() internal virtual {
@@ -129,8 +137,10 @@ contract BaseSetup is Test {
 
         bytes32 initHash = launchpad.hash(initData);
 
-        bytes memory factoryInitializer =
-            abi.encodeCall(Safe7579Launchpad.preValidationSetup, (initHash, address(0), ""));
+        bytes memory factoryInitializer = abi.encodeCall(
+            Safe7579Launchpad.preValidationSetup,
+            (initHash, address(guardSetter), abi.encodeCall(BlockGuardSetter.setGuard, (address(blockSafeGuard))))
+        );
 
         userOp.initCode = abi.encodePacked(
             address(safeProxyFactory),
