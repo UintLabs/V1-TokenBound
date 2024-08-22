@@ -127,7 +127,7 @@ contract TokenshieldSafe7579Test is BaseSetup {
         userOps[0] = userOp;
 
         // Send the userOp to the entrypoint
-        entrypoint.handleOps(userOps, payable(address(0x69)));
+    entrypoint.handleOps(userOps, payable(address(0x69)));
 
         assertEq(priorBalance, target.balanceOf(address(userAccount)) + 6 ether);
 
@@ -177,5 +177,9 @@ contract TokenshieldSafe7579Test is BaseSetup {
         assertEq(priorBalance, target.balanceOf(address(userAccount)) + amountToDeposit);
         assertEq(depositTarget.depositedAmount(address(userAccount)), amountToDeposit);
         assertEq(target.balanceOf(address(depositTarget)), amountToDeposit);
+    }
+
+    function test_functions()  external {
+        
     }
 }

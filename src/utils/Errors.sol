@@ -7,3 +7,4 @@ error Tokenshield_EoaNotSupported();
 error Tokenshield_Validator_Guardian_AccountNotInitialized();
 error Tokenshield_InvalidGuardian();
 error Tokenshield_NotValidOwner();
+error Tokenshield_InvalidSignature(address signer, address guardian);

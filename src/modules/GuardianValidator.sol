@@ -11,7 +11,7 @@ import { ISafe2 as ISafe } from "../interfaces/ISafe2.sol";
 import { UnsignedUserOperation } from "../utils/DataTypes.sol";
 import "../utils/Errors.sol";
 
-// import { console } from "forge-std/console.sol";
+import { console } from "forge-std/console.sol";
 
 contract GuardianValidator is IValidator, EIP712 {
     // using ECDSA for bytes32;
@@ -157,13 +157,20 @@ contract GuardianValidator is IValidator, EIP712 {
 
         (signer,,) = ECDSA.tryRecover(digest, v1, r1, s1);
         (address guardianSigner,,) = ECDSA.tryRecover(digest, v2, r2, s2);
-        // console.logBytes32(digest);
-        // console.logBytes32(r2);
-        // console.logBytes32(s2);
-        // console.logUint(v2);
+        console.logBytes32(transactionHash);
+        console.logBytes32(digest);
+        console.logBytes32(r1);
+        console.logBytes32(s1);
+        console.logUint(v1);
+
+        console.logBytes32(r2);
+        console.logBytes32(s2);
+        console.logUint(v2);
 
         if (signer == address(0) || guardianSigner == address(0)) {
-            revert Tokenshield_ZeroAddress();
+            console.log(signer);
+            console.log(guardianSigner);
+            revert Tokenshield_InvalidSignature(signer, guardianSigner);
         }
         if (!isGuardianEnabled[guardianSigner]) revert Tokenshield_InvalidGuardian();
     }
@@ -180,9 +187,9 @@ contract GuardianValidator is IValidator, EIP712 {
                 keccak256(bytes(_unsignedUserOp.callData)),
                 _unsignedUserOp.accountGasLimits,
                 _unsignedUserOp.preVerificationGas,
-                _unsignedUserOp.gasFees,
-                keccak256(bytes(_unsignedUserOp.paymasterAndData))
+                _unsignedUserOp.gasFees
             )
         );
+        // keccak256(bytes(_unsignedUserOp.paymasterAndData))
     }
 }
