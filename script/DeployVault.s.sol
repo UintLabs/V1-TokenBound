@@ -19,7 +19,7 @@ contract DeployVault is Script, HelpersConfig, FileHelpers {
 
     function run() external returns (address, address, address, address, address) {
         uint256 privateKey;
-        if (chainId == 11_155_111) {
+        if (chainId == 11_155_111 || chainId == 534_351) {
             privateKey = vm.envUint("SEPOLIA_PRIVATE_KEY");
         } else {
             privateKey = vm.envUint("PRIVATE_KEY");

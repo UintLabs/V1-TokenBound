@@ -11,7 +11,7 @@ contract DeployERC721 is Script, HelpersConfig {
     function run() external {
         // Deploy deployer = new Deploy();
         uint256 privateKey;
-        if (chainId == 11_155_111) {
+        if (chainId == 11_155_111 || chainId == 534_351) {
             privateKey = vm.envUint("SEPOLIA_PRIVATE_KEY");
         } else {
             privateKey = vm.envUint("PRIVATE_KEY");

@@ -15,11 +15,11 @@ import { Vm } from "forge-std/Vm.sol";
 contract CreateVault is Script, HelpersConfig, FileHelpers {
     function run() external returns (address createdVault) {
         uint256 privateKey;
-        address tokenShieldNftAddress = 0x7C2562c8eC021c82E51E7C6737d3F613026e263d;
+        address tokenShieldNftAddress = 0x835b9A0cA26B10Fb6E528FD4586aD7a039D538fD;
         address erc6551RegistryAddress = 0xf8666e5042139b90670b5548BFBeCd61b9a45897;
-        address vaultImplAddress = 0xd2B513C2fC13C200c2f9E080C5b99fb5897F7E3e;
-        address recoveryManager = address(0);
-        if (chainId == 11_155_111) {
+        address vaultImplAddress = 0x2b2148d04d71D010C5de6c67f66CbCeD3e71b0DB;
+        address recoveryManager = 0x6C5117E6C30029560fDd8b4e9d0F2920632F3932;
+        if (chainId == 11_155_111 || chainId == 534_351) {
             privateKey = vm.envUint("SEPOLIA_PRIVATE_KEY");
         } else {
             privateKey = vm.envUint("PRIVATE_KEY");
@@ -52,7 +52,7 @@ contract CreateVault is Script, HelpersConfig, FileHelpers {
 
     function _createVault(TokenShieldNft tokenShieldNft) internal returns (address createdVault) {
         vm.recordLogs();
-        tokenShieldNft.createSubscription{ value: 0.0012 ether }();
+        tokenShieldNft.createVault{ value: 0.0012 ether }();
         Vm.Log[] memory entries = vm.getRecordedLogs();
         createdVault = abi.decode(entries[1].data, (address));
     }

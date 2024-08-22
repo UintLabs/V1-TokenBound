@@ -44,6 +44,9 @@ contract HelpersConfig is Script {
         if (chainId == 11_155_111) {
             config = getSepoliaConfig();
         }
+        if (chainId == 534_351) {
+            config = getScrollConfig();
+        }
 
         return config;
     }
@@ -62,7 +65,7 @@ contract HelpersConfig is Script {
     }
 
     function getSepoliaConfig() internal view returns (ChainConfig memory) {
-        address adminAddress = vm.envAddress("SEPOLIA_ADMIN_ADDRESS");
+        address adminAddress = vm.envAddress("SEPOLIA_DEFAULT_ADMIN_ADDRESS");
         address guardSigner = vm.envAddress("SEPOLIA_GUARDIAN_SIGNER");
         address guardSetter = vm.envAddress("SEPOLIA_GUARDIAN_SETTER");
         return ChainConfig({
@@ -75,5 +78,22 @@ contract HelpersConfig is Script {
             domainName: "TokenShield",
             domainVersion: "1"
         });
+    }
+
+    function getScrollConfig() internal view  returns (ChainConfig memory) {
+        address adminAddress = vm.envAddress("SEPOLIA_DEFAULT_ADMIN_ADDRESS");
+        address guardSigner = vm.envAddress("SEPOLIA_GUARDIAN_SIGNER");
+        address guardSetter = vm.envAddress("SEPOLIA_GUARDIAN_SETTER");
+        return ChainConfig({
+            contractAdmin: adminAddress,
+            guardianSigner: guardSigner,
+            guardianSetter: guardSetter,
+            accountRecoveryManager: vm.addr(4),
+            ethPriceFeed: 0x694AA1769357215DE4FAC081bf1f309aDC325306,
+            automationRegistry: 0x86EFBD0b6736Bed994962f9797049422A3A8E8Ad,
+            domainName: "TokenShield",
+            domainVersion: "1"
+        });
+    
     }
 }
