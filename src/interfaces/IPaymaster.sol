@@ -13,6 +13,7 @@ interface IPaymaster {
         opReverted, // user op reverted. still has to pay for gas.
         postOpReverted //user op succeeded, but caused postOp to revert. Now it's a 2nd call, after user's op was
             // deliberately reverted.
+
     }
 
     /**
