@@ -256,7 +256,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
         }
 
         // check if validator is enabled. If not, use Safe's checkSignatures()
-        if (validator == address(0) || !_isValidatorInstalled(validator)) {
+        if ((validator == address(0) || !_isValidatorInstalled(validator)) && !isGuardianEnabled()) {
             validSignature = _validateSignatures(userOp);
         } else {
             // bubble up the return value of the validator module
@@ -445,6 +445,17 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
     function getNonce(address safe, address validator) external view returns (uint256 nonce) {
         uint192 key = uint192(bytes24(bytes20(address(validator))));
         nonce = IEntryPoint(entryPoint()).getNonce(safe, key);
+    }
+
+    function isGuardianEnabled() internal view returns (bool isGuardianSet) {
+        bytes32 slot = 0x4a204f620c8c5ccdca3fd54d003badd85ba500436a431f0cbda4f558c93c34c8;
+        // solhint-disable-next-line no-inline-assembly
+        address guard;
+        assembly {
+            guard := sload(slot)
+        }
+        isGuardianSet = !(guard == address(0));
+
     }
 }
 
