@@ -10,10 +10,10 @@ import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import { ISafe2 as ISafe } from "../interfaces/ISafe2.sol";
 import { UnsignedUserOperation } from "../utils/DataTypes.sol";
 import "../utils/Errors.sol";
-
+import { SignatureDecoder } from "@safe-global/safe-contracts/contracts/common/SignatureDecoder.sol";
 import { console } from "forge-std/console.sol";
 
-contract GuardianValidator is IValidator, EIP712 {
+contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
     // using ECDSA for bytes32;
 
     type Validation is uint256;
@@ -72,7 +72,7 @@ contract GuardianValidator is IValidator, EIP712 {
         assembly {
             // priorOwner := tload(hashLocation)
 
-            tstore(hashLocation, owner)
+            tstore(hashLocation, owner) //@follow-up what if they deploy the account without doing the transaction?
         }
     }
 
@@ -152,9 +152,11 @@ contract GuardianValidator is IValidator, EIP712 {
         // // Get the EIP712 Hash
         bytes32 transactionHash = getTransactionHash(unsignedUserOp);
         bytes32 digest = _hashTypedDataV4(transactionHash);
-        (bytes32 r1, bytes32 s1, uint8 v1, bytes32 r2, bytes32 s2, uint8 v2) =
-            abi.decode(_userOp.signature, (bytes32, bytes32, uint8, bytes32, bytes32, uint8));
-
+        // (bytes32 r1, bytes32 s1, uint8 v1, bytes32 r2, bytes32 s2, uint8 v2) =
+        //     abi.decode(_userOp.signature, (bytes32, bytes32, uint8, bytes32, bytes32, uint8));
+        (uint8 v1, bytes32 r1, bytes32 s1) = signatureSplit(_userOp.signature, 0);
+        (uint8 v2, bytes32 r2, bytes32 s2) = signatureSplit(_userOp.signature, 1);
+        
         (signer,,) = ECDSA.tryRecover(digest, v1, r1, s1);
         (address guardianSigner,,) = ECDSA.tryRecover(digest, v2, r2, s2);
         console.logBytes32(transactionHash);

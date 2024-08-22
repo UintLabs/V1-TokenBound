@@ -347,7 +347,7 @@ contract BaseSetup is Test {
         (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(signer.key, digest);
         (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(guardian.key, digest);
         // console.log(guardian.key);
-        signature = abi.encode(r1, s1, v1, r2, s2, v2);
+        signature = abi.encodePacked(r1, s1, v1, r2, s2, v2);
 
         // console.logBytes32(digest);
         // console.logBytes32(r2);
