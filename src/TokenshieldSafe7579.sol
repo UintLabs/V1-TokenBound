@@ -256,7 +256,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
         }
 
         // check if validator is enabled. If not, use Safe's checkSignatures()
-        if ((validator == address(0) || !_isValidatorInstalled(validator)) && !isGuardianEnabled()) {
+        if ((validator == address(0) || !_isValidatorInstalled(validator)) && !isGuardianEnabled()) {//@follow-up can this block the account from being used as a 7579 module??
             validSignature = _validateSignatures(userOp);
         } else {
             // bubble up the return value of the validator module

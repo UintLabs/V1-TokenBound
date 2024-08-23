@@ -179,7 +179,21 @@ contract TokenshieldSafe7579Test is BaseSetup {
         assertEq(target.balanceOf(address(depositTarget)), amountToDeposit);
     }
 
-    function test_functions()  external {
-        
+    function test_CheckThreshold() external {
+        setupAccountWithTx();
+        // keccak256("guard_manager.guard.address")
+        bytes32 SLOT3 = bytes32(uint(0x03));
+        bytes32 SLOT4 = bytes32(uint(0x04));
+        bytes32 SLOT5 = bytes32(uint(0x05));
+        bytes32 slotData3 = vm.load(address(userAccount), SLOT3);
+        console.logBytes32(slotData3);
+        bytes32 slotData4 = vm.load(address(userAccount), SLOT4);
+        console.logBytes32(slotData4);
+        bytes32 slotData5 = vm.load(address(userAccount), SLOT5);
+        console.logBytes32(slotData5);
+        // address guardAddress = address(uint160(uint256(slotData)));
+        // console.log(guardAddress);
+
+        // assertEq(guardAddress, address(blockSafeGuard));
     }
 }

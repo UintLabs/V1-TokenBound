@@ -45,4 +45,20 @@ contract RecoveryModule is IExecutor {
     function isInitialized(address smartAccount) external view returns (bool) {
         return _isInitialized[smartAccount];
     }
+
+    /**
+     * @dev This function is used to start the recovery process
+     */
+    function startRecovery(address account, address newOwner, bytes memory signatures)  external {
+        
+    }
+
+
+    function completeRecovery(address account) external {
+        
+    }
+
+    function stopRecovery(address account, bytes memory signatures)  external {
+        
+    }
 }
