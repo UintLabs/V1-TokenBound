@@ -448,6 +448,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
     }
 
     function isGuardianEnabled() internal view returns (bool isGuardianSet) {
+        // MEMORY SLOT where Guard Address of the Safe is Stored 
         bytes32 slot = 0x4a204f620c8c5ccdca3fd54d003badd85ba500436a431f0cbda4f558c93c34c8;
         // solhint-disable-next-line no-inline-assembly
         address guard;

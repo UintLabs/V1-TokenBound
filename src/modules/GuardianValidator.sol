@@ -24,9 +24,8 @@ contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
         Initialized
     }
 
-    error GuardianValidator_LengthMismatch();
+    
 
-    mapping(address guardian => bool isEnabled) public isGuardianEnabled;
     mapping(address account => AccountInitialization initStatus) accountStatus;
 
     Validation internal constant VALIDATION_SUCCESS = Validation.wrap(0);
@@ -50,14 +49,7 @@ contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
         return verifySignatureOfUserOp(userOp, userOpHash);
     }
 
-    function setGuardian(address[] calldata _guardian, bool[] calldata _isEnabled) external {
-        if (_guardian.length != _isEnabled.length) {
-            revert GuardianValidator_LengthMismatch();
-        }
-        for (uint256 i = 0; i < _guardian.length; i++) {
-            isGuardianEnabled[_guardian[i]] = _isEnabled[i];
-        }
-    }
+    
 
     function onInstall(bytes calldata data) external override {
         address owner = abi.decode(data, (address));
@@ -174,7 +166,7 @@ contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
             console.log(guardianSigner);
             revert Tokenshield_InvalidSignature(signer, guardianSigner);
         }
-        if (!isGuardianEnabled[guardianSigner]) revert Tokenshield_InvalidGuardian();
+        // if (!isGuardianEnabled[guardianSigner]) revert Tokenshield_InvalidGuardian();
     }
 
     function getTransactionHash(UnsignedUserOperation memory _unsignedUserOp) public pure returns (bytes32) {
@@ -193,5 +185,9 @@ contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
             )
         );
         // keccak256(bytes(_unsignedUserOp.paymasterAndData))
+    }
+
+    function setRecoveryModule() external {
+        
     }
 }

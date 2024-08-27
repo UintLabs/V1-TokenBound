@@ -2,9 +2,23 @@
 pragma solidity 0.8.25;
 
 import { IExecutor } from "erc7579/interfaces/IERC7579Module.sol";
+import "erc7579/interfaces/IERC7579Module.sol";
+import "src/utils/Errors.sol";
+import { ITokenshieldSafe7579 } from "src/interfaces/ITokenshieldSafe7579.sol";
 
 contract RecoveryModule is IExecutor {
-    mapping(address account => bool) private _isInitialized;
+    struct AccountStatus {
+        bool isInitialized;
+        bool isRecoverying;
+    }
+
+    mapping(address account => AccountStatus status) private accountStatus;
+    address immutable tokenshieldValidator;
+
+    constructor(address _tokenshieldValidator) {
+        tokenshieldValidator = _tokenshieldValidator;
+    }
+
     /**
      * @dev This function is called by the smart account during installation of the module
      *  arbitrary data that may be required on the module during `onInstall`
@@ -12,14 +26,12 @@ contract RecoveryModule is IExecutor {
      *
      * MUST revert on error (i.e. if module is already enabled)
      */
-
-    function onInstall(bytes calldata)
-        /**
-         * data
-         */
-        external
+    function onInstall(bytes calldata) external 
+    /**
+     * data
+     */
     {
-        _isInitialized[msg.sender] = true;
+        accountStatus[msg.sender].isInitialized = true;
     }
 
     /**
@@ -37,28 +49,48 @@ contract RecoveryModule is IExecutor {
      *
      * MUST return true if the module is of the given type and false otherwise
      */
-    function isModuleType(uint256 moduleTypeId) external view returns (bool) { }
-
-    /**
-     * @dev Returns if the module was already initialized for a provided smartaccount
-     */
-    function isInitialized(address smartAccount) external view returns (bool) {
-        return _isInitialized[smartAccount];
+    function isModuleType(uint256 moduleTypeId) external view returns (bool) {
+        if (moduleTypeId == MODULE_TYPE_EXECUTOR) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**
      * @dev This function is used to start the recovery process
      */
-    function startRecovery(address account, address newOwner, bytes memory signatures)  external {
-        
+    function startRecovery(address account, address newOwner, bytes memory signatures) external {
+        if (account == address(0) || newOwner == address(0)) {
+            revert Tokenshield_ZeroAddress();
+        }
+        if (!getAccountStatus(account).isInitialized) {
+            revert Tokenshield_Executor_Recovery_AccountNotInitialized();
+        }
+
+        if (getAccountStatus(account).isRecoverying) {
+            revert Tokenshield_Account_Already_Recoverying();
+        }
+
+        bool isTokenshieldValidatorInstalled =
+            ITokenshieldSafe7579(account).isModuleInstalled(MODULE_TYPE_VALIDATOR, tokenshieldValidator, "");
+        if (isTokenshieldValidatorInstalled) { 
+            
+        }
     }
 
+    function completeRecovery(address account) external { }
 
-    function completeRecovery(address account) external {
-        
+    function stopRecovery(address account, bytes memory signatures) external { }
+
+    /**
+     * @dev Returns if the module was already initialized for a provided smartaccount
+     */
+    function getAccountStatus(address account) public view returns (AccountStatus memory) {
+        return accountStatus[account];
     }
 
-    function stopRecovery(address account, bytes memory signatures)  external {
-        
+    function isInitialized(address account) external view override returns (bool) {
+        return accountStatus[account].isInitialized;
     }
 }
