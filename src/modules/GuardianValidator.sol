@@ -10,8 +10,9 @@ import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import { ISafe2 as ISafe } from "../interfaces/ISafe2.sol";
 import { UnsignedUserOperation } from "../utils/DataTypes.sol";
 import "../utils/Errors.sol";
+import { ITokenshieldKernal } from "src/interfaces/ITokenshieldKernal.sol";
 import { SignatureDecoder } from "@safe-global/safe-contracts/contracts/common/SignatureDecoder.sol";
-import { console } from "forge-std/console.sol";
+// import { console } from "forge-std/console.sol";
 
 contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
     // using ECDSA for bytes32;
@@ -24,14 +25,16 @@ contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
         Initialized
     }
 
-    
+    ITokenshieldKernal immutable kernal;
 
     mapping(address account => AccountInitialization initStatus) accountStatus;
 
     Validation internal constant VALIDATION_SUCCESS = Validation.wrap(0);
     Validation internal constant VALIDATION_FAILED = Validation.wrap(1);
 
-    constructor() EIP712("TokenShield", "1") { }
+    constructor(address _kernal) EIP712("TokenShield", "1") {
+        kernal = ITokenshieldKernal(_kernal);
+     }
 
     function validateUserOp(
         PackedUserOperation calldata userOp,
@@ -48,8 +51,6 @@ contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
     {
         return verifySignatureOfUserOp(userOp, userOpHash);
     }
-
-    
 
     function onInstall(bytes calldata data) external override {
         address owner = abi.decode(data, (address));
@@ -124,7 +125,7 @@ contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
             }
         }
 
-        // if (owner == address(0)) revert Tokenshield_ZeroAddress();
+        if (owner == address(0)) revert Tokenshield_ZeroAddress();
 
         return Validation.unwrap(VALIDATION_SUCCESS);
     }
@@ -148,25 +149,25 @@ contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
         //     abi.decode(_userOp.signature, (bytes32, bytes32, uint8, bytes32, bytes32, uint8));
         (uint8 v1, bytes32 r1, bytes32 s1) = signatureSplit(_userOp.signature, 0);
         (uint8 v2, bytes32 r2, bytes32 s2) = signatureSplit(_userOp.signature, 1);
-        
+
         (signer,,) = ECDSA.tryRecover(digest, v1, r1, s1);
         (address guardianSigner,,) = ECDSA.tryRecover(digest, v2, r2, s2);
-        console.logBytes32(transactionHash);
-        console.logBytes32(digest);
-        console.logBytes32(r1);
-        console.logBytes32(s1);
-        console.logUint(v1);
+        // console.logBytes32(transactionHash);
+        // console.logBytes32(digest);
+        // console.logBytes32(r1);
+        // console.logBytes32(s1);
+        // console.logUint(v1);
 
-        console.logBytes32(r2);
-        console.logBytes32(s2);
-        console.logUint(v2);
+        // console.logBytes32(r2);
+        // console.logBytes32(s2);
+        // console.logUint(v2);
 
         if (signer == address(0) || guardianSigner == address(0)) {
-            console.log(signer);
-            console.log(guardianSigner);
+            // console.log(signer);
+            // console.log(guardianSigner);
             revert Tokenshield_InvalidSignature(signer, guardianSigner);
         }
-        // if (!isGuardianEnabled[guardianSigner]) revert Tokenshield_InvalidGuardian();
+        if (!kernal.isApprovedGuardian(guardianSigner)) revert Tokenshield_InvalidGuardian();
     }
 
     function getTransactionHash(UnsignedUserOperation memory _unsignedUserOp) public pure returns (bytes32) {
@@ -187,7 +188,5 @@ contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
         // keccak256(bytes(_unsignedUserOp.paymasterAndData))
     }
 
-    function setRecoveryModule() external {
-        
-    }
+    function setRecoveryModule() external { }
 }

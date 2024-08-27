@@ -9,7 +9,7 @@ contract TokenshieldKernal is AccessControl {
     bytes32 constant MFA_SETTER = keccak256("TOKENSHIELD_MFA_SETTER_ROLE");
     bytes32 constant MFA_SETTER_ADMIN = keccak256("TOKENSHIELD_MFA_SETTER_ROLE_ADMIN");
 
-    mapping(address guardian => bool isEnabled) public isGuardianEnabled;
+    mapping(address guardian => bool isEnabled) internal isGuardianEnabled;
 
     constructor(address defaultAdminRole, address mfaSetterRoleAdmin) {
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdminRole);
@@ -25,6 +25,10 @@ contract TokenshieldKernal is AccessControl {
             isGuardianEnabled[_guardian[i]] = _isEnabled[i];
             emit Tokenshield_Guardian_Changed(_guardian[i], _isEnabled[i]);
         }
+    }
+
+    function isApprovedGuardian(address guardian) external view returns (bool) {
+        return isGuardianEnabled[guardian];
     }
 
     

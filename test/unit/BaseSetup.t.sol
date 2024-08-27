@@ -35,6 +35,9 @@ import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+import { TokenshieldKernal } from "src/TokenshieldKernal.sol";
+
+
 contract BaseSetup is Test {
     struct EIP712Domain {
         string name;
@@ -46,6 +49,8 @@ contract BaseSetup is Test {
     Account guardian1 = makeAccount("GUARDIAN_1");
     Account guardianSigner = makeAccount("GUARDIAN_SIGNER");
     Account guardianDefaultNominee = makeAccount("GUARDIAN_NOMINEE");
+    Account defaultAdmin = makeAccount("DEFAULT_ADMIN");
+    Account mfaSetterAdmin = makeAccount("MFA_SETTER_ADMIN");
 
     // Safe
     Safe singleton;
@@ -65,6 +70,7 @@ contract BaseSetup is Test {
     GuardianValidator defaultValidator;
     RecoveryModule defaultExecutor;
     MockRegistry registry;
+    TokenshieldKernal kernal;
 
     // Target
     MockERC20Target target;
@@ -183,14 +189,16 @@ contract BaseSetup is Test {
     }
 
     function createAndInitialseModules() internal virtual {
+        // Create Kernal
+        kernal = new TokenshieldKernal(defaultAdmin.addr, mfaSetterAdmin.addr);
         // Create Guardian Validator
-        defaultValidator = new GuardianValidator();
+        defaultValidator = new GuardianValidator(address(kernal));
 
         // Initialise GuardianValidator
         setGuardiansForGuardianValidator(address(defaultValidator), guardian1);
 
         // create executor
-        defaultExecutor = new RecoveryModule();
+        defaultExecutor = new RecoveryModule(address(kernal));
 
         target = new MockERC20Target();
     }
@@ -286,7 +294,7 @@ contract BaseSetup is Test {
 
         bool[] memory isEnabled = new bool[](1);
         isEnabled[0] = true;
-        GuardianValidator(_validator).setGuardian(guardians, isEnabled);
+        kernal.setGuardian(guardians, isEnabled);
     }
 
     function predictAccount(

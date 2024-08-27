@@ -26,7 +26,7 @@ contract TokenshieldSafe7579Test is BaseSetup {
     }
 
     function test_IsGuardianValidatorSet() external view {
-        bool isEnabled = defaultValidator.isGuardianEnabled(guardian1.addr);
+        bool isEnabled = kernal.isApprovedGuardian(guardian1.addr);
         assert(isEnabled);
     }
 

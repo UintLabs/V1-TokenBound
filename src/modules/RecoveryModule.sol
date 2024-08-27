@@ -6,17 +6,21 @@ import "erc7579/interfaces/IERC7579Module.sol";
 import "src/utils/Errors.sol";
 import { ITokenshieldSafe7579 } from "src/interfaces/ITokenshieldSafe7579.sol";
 
+import { ITokenshieldKernal } from "src/interfaces/ITokenshieldKernal.sol";
+
 contract RecoveryModule is IExecutor {
     struct AccountStatus {
         bool isInitialized;
         bool isRecoverying;
     }
 
-    mapping(address account => AccountStatus status) private accountStatus;
     address immutable tokenshieldValidator;
+    ITokenshieldKernal immutable kernal;
 
-    constructor(address _tokenshieldValidator) {
-        tokenshieldValidator = _tokenshieldValidator;
+    mapping(address account => AccountStatus status) private accountStatus;
+
+    constructor(address _kernal) {
+        kernal = ITokenshieldKernal(_kernal);
     }
 
     /**
@@ -74,9 +78,7 @@ contract RecoveryModule is IExecutor {
 
         bool isTokenshieldValidatorInstalled =
             ITokenshieldSafe7579(account).isModuleInstalled(MODULE_TYPE_VALIDATOR, tokenshieldValidator, "");
-        if (isTokenshieldValidatorInstalled) { 
-            
-        }
+        if (isTokenshieldValidatorInstalled) { }
     }
 
     function completeRecovery(address account) external { }
