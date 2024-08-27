@@ -125,7 +125,7 @@ contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
             }
         }
 
-        if (owner == address(0)) revert Tokenshield_ZeroAddress();
+        // if (owner == address(0)) revert Tokenshield_ZeroAddress();
 
         return Validation.unwrap(VALIDATION_SUCCESS);
     }
