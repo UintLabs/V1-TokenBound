@@ -25,7 +25,7 @@ contract BlockGuardSetter {
             require(Guard(guard).supportsInterface(type(Guard).interfaceId), "GS300");
         }
         bytes32 slot = GUARD_STORAGE_SLOT;
-        
+
         assembly {
             sstore(slot, guard)
         }
@@ -35,12 +35,12 @@ contract BlockGuardSetter {
     /**
      * @dev Should only be called by delegateCall from the Safe Proxy through the TokenshieldSafe7579 module
      * Should not be callable anytime other than when removing.
-     *------------- BlockSafeGuardJustSkip while temporary and only when permanent do this
+     * ------------- BlockSafeGuardJustSkip while temporary and only when permanent do this
      */
     function removeGuard() external {
         bytes32 slot = GUARD_STORAGE_SLOT;
         address zeroAddress = ZERO_ADDRESS;
-        
+
         assembly {
             sstore(slot, zeroAddress)
         }

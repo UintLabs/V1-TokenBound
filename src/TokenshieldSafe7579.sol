@@ -256,7 +256,8 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
         }
 
         // check if validator is enabled. If not, use Safe's checkSignatures()
-        if ((validator == address(0) || !_isValidatorInstalled(validator)) && !isGuardianEnabled()) {//@follow-up can this block the account from being used as a 7579 module??
+        if ((validator == address(0) || !_isValidatorInstalled(validator)) && !isGuardianEnabled()) {
+            //@follow-up can this block the account from being used as a 7579 module??
             validSignature = _validateSignatures(userOp);
         } else {
             // bubble up the return value of the validator module
@@ -448,7 +449,7 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
     }
 
     function isGuardianEnabled() internal view returns (bool isGuardianSet) {
-        // MEMORY SLOT where Guard Address of the Safe is Stored 
+        // MEMORY SLOT where Guard Address of the Safe is Stored
         bytes32 slot = 0x4a204f620c8c5ccdca3fd54d003badd85ba500436a431f0cbda4f558c93c34c8;
         // solhint-disable-next-line no-inline-assembly
         address guard;
@@ -456,7 +457,6 @@ contract TokenshieldSafe7579 is ISafe7579, SafeOp, SupportViewer, AccessControl,
             guard := sload(slot)
         }
         isGuardianSet = !(guard == address(0));
-
     }
 }
 

@@ -10,7 +10,9 @@ import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import { ISafe2 as ISafe } from "../interfaces/ISafe2.sol";
 import { UnsignedUserOperation } from "../utils/DataTypes.sol";
 import "../utils/Errors.sol";
+import "src/utils/Roles.sol";
 import { ITokenshieldKernal } from "src/interfaces/ITokenshieldKernal.sol";
+import { IRecoveryExecutor } from "src/interfaces/IRecoveryExecutor.sol";
 import { SignatureDecoder } from "@safe-global/safe-contracts/contracts/common/SignatureDecoder.sol";
 // import { console } from "forge-std/console.sol";
 
@@ -34,7 +36,15 @@ contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
 
     constructor(address _kernal) EIP712("TokenShield", "1") {
         kernal = ITokenshieldKernal(_kernal);
-     }
+    }
+
+    modifier whenNotPaused() {
+        bool isPaused = isAccountPaused(msg.sender);
+        if (isPaused == true) {
+            revert Tokenshield_Account_Paused();
+        }
+        _;
+    }
 
     function validateUserOp(
         PackedUserOperation calldata userOp,
@@ -91,6 +101,7 @@ contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
         bytes32 _userOpHash
     )
         internal
+        whenNotPaused
         returns (uint256)
     {
         address owner;
@@ -124,8 +135,6 @@ contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
                 revert Tokenshield_NotValidOwner();
             }
         }
-
-        // if (owner == address(0)) revert Tokenshield_ZeroAddress();
 
         return Validation.unwrap(VALIDATION_SUCCESS);
     }
@@ -188,5 +197,8 @@ contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
         // keccak256(bytes(_unsignedUserOp.paymasterAndData))
     }
 
-    function setRecoveryModule() external { }
+    function isAccountPaused(address account) internal view returns (bool isPaused) {
+        address recoveryExecutorAddress = kernal.getRoleMember(TOKENSHIELD_RECOVERY_EXECUTOR, 0);
+        isPaused = IRecoveryExecutor(recoveryExecutorAddress).isRecoverying(account);
+    }
 }

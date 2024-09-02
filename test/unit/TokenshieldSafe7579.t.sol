@@ -127,7 +127,7 @@ contract TokenshieldSafe7579Test is BaseSetup {
         userOps[0] = userOp;
 
         // Send the userOp to the entrypoint
-    entrypoint.handleOps(userOps, payable(address(0x69)));
+        entrypoint.handleOps(userOps, payable(address(0x69)));
 
         assertEq(priorBalance, target.balanceOf(address(userAccount)) + 6 ether);
 
@@ -182,9 +182,9 @@ contract TokenshieldSafe7579Test is BaseSetup {
     function test_CheckThreshold() external {
         setupAccountWithTx();
         // keccak256("guard_manager.guard.address")
-        bytes32 SLOT3 = bytes32(uint(0x03));
-        bytes32 SLOT4 = bytes32(uint(0x04));
-        bytes32 SLOT5 = bytes32(uint(0x05));
+        bytes32 SLOT3 = bytes32(uint256(0x03));
+        bytes32 SLOT4 = bytes32(uint256(0x04));
+        bytes32 SLOT5 = bytes32(uint256(0x05));
         bytes32 slotData3 = vm.load(address(userAccount), SLOT3);
         console.logBytes32(slotData3);
         bytes32 slotData4 = vm.load(address(userAccount), SLOT4);

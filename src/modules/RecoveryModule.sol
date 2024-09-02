@@ -4,17 +4,18 @@ pragma solidity 0.8.25;
 import { IExecutor } from "erc7579/interfaces/IERC7579Module.sol";
 import "erc7579/interfaces/IERC7579Module.sol";
 import "src/utils/Errors.sol";
+import "src/utils/Roles.sol";
 import { ITokenshieldSafe7579 } from "src/interfaces/ITokenshieldSafe7579.sol";
 
 import { ITokenshieldKernal } from "src/interfaces/ITokenshieldKernal.sol";
 
 contract RecoveryModule is IExecutor {
     struct AccountStatus {
+        address nominee;
         bool isInitialized;
         bool isRecoverying;
     }
 
-    address immutable tokenshieldValidator;
     ITokenshieldKernal immutable kernal;
 
     mapping(address account => AccountStatus status) private accountStatus;
@@ -76,9 +77,17 @@ contract RecoveryModule is IExecutor {
             revert Tokenshield_Account_Already_Recoverying();
         }
 
-        bool isTokenshieldValidatorInstalled =
-            ITokenshieldSafe7579(account).isModuleInstalled(MODULE_TYPE_VALIDATOR, tokenshieldValidator, "");
-        if (isTokenshieldValidatorInstalled) { }
+        // address guardianValidator = kernal.getRoleMember(TOKENSHIELD_GUARDIAN_VALIDATOR, 0);
+        // if (guardianValidator == address(0)) {
+        //     revert Tokenshield_ZeroAddress();
+        // }
+
+        // bool isTokenshieldValidatorInstalled =
+        //     ITokenshieldSafe7579(account).isModuleInstalled(MODULE_TYPE_VALIDATOR, guardianValidator, "");
+        // if (isTokenshieldValidatorInstalled) { }
+        // checkSignatures(account, signatures);
+
+        accountStatus[account].isRecoverying = true;
     }
 
     function completeRecovery(address account) external { }
@@ -95,4 +104,12 @@ contract RecoveryModule is IExecutor {
     function isInitialized(address account) external view override returns (bool) {
         return accountStatus[account].isInitialized;
     }
+
+    function isRecoverying(address account) external view returns (bool) {
+        return accountStatus[account].isRecoverying;
+    }
+
+    // function checkSignatures(account) internal  returns () {
+
+    // }
 }

@@ -40,7 +40,7 @@ contract Deploy is Script, BaseSetup {
         blockSafeGuard = new BlockSafeGuard{ salt: "12345" }();
 
         // Create Kernal
-        kernal = new TokenshieldKernal(defaultAdmin.addr, mfaSetterAdmin.addr);
+        kernal = new TokenshieldKernal(defaultAdmin.addr, mfaSetterAdmin.addr, moduleSetter.addr);
 
         // Create Guardian Validator
         defaultValidator = new GuardianValidator{ salt: "12345" }(address(kernal));

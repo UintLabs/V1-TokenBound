@@ -9,7 +9,7 @@ import "safe7579/src/DataTypes.sol";
 import { UnsignedUserOperation } from "../../src/utils/DataTypes.sol";
 
 import { Safe } from "@safe-global/safe-contracts/contracts/Safe.sol";
-    import { SafeProxy, SafeProxyFactory } from "@safe-global/safe-contracts/contracts/proxies/SafeProxyFactory.sol";
+import { SafeProxy, SafeProxyFactory } from "@safe-global/safe-contracts/contracts/proxies/SafeProxyFactory.sol";
 import { TokenshieldSafe7579 } from "../../src/TokenshieldSafe7579.sol";
 import { Safe7579Launchpad } from "safe7579/src/Safe7579Launchpad.sol";
 
@@ -36,7 +36,7 @@ import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import { TokenshieldKernal } from "src/TokenshieldKernal.sol";
-
+import "src/utils/Roles.sol";
 
 contract BaseSetup is Test {
     struct EIP712Domain {
@@ -51,6 +51,8 @@ contract BaseSetup is Test {
     Account guardianDefaultNominee = makeAccount("GUARDIAN_NOMINEE");
     Account defaultAdmin = makeAccount("DEFAULT_ADMIN");
     Account mfaSetterAdmin = makeAccount("MFA_SETTER_ADMIN");
+    Account mfaSetter = makeAccount("MFA_SETTER");
+    Account moduleSetter = makeAccount("MODULE_SETTER");
 
     // Safe
     Safe singleton;
@@ -138,11 +140,9 @@ contract BaseSetup is Test {
             callData: getCallExecutionData()
         });
 
-
         console.log("Execution Calldata- ");
         console.logBytes(initData.callData);
 
-        
         console.log("SetupData- ");
         console.logBytes(initData.setupData);
 
@@ -190,7 +190,7 @@ contract BaseSetup is Test {
 
     function createAndInitialseModules() internal virtual {
         // Create Kernal
-        kernal = new TokenshieldKernal(defaultAdmin.addr, mfaSetterAdmin.addr);
+        kernal = new TokenshieldKernal(defaultAdmin.addr, mfaSetterAdmin.addr, moduleSetter.addr);
         // Create Guardian Validator
         defaultValidator = new GuardianValidator(address(kernal));
 
@@ -199,6 +199,8 @@ contract BaseSetup is Test {
 
         // create executor
         defaultExecutor = new RecoveryModule(address(kernal));
+
+        setExecutors(address(defaultExecutor));
 
         target = new MockERC20Target();
     }
@@ -294,7 +296,17 @@ contract BaseSetup is Test {
 
         bool[] memory isEnabled = new bool[](1);
         isEnabled[0] = true;
+
+        hoax(mfaSetterAdmin.addr, 10 ether);
+        kernal.grantRole(MFA_SETTER, mfaSetter.addr);
+
+        hoax(mfaSetter.addr, 10 ether);
         kernal.setGuardian(guardians, isEnabled);
+    }
+
+    function setExecutors(address recoveryAddress) public {
+        hoax(moduleSetter.addr, 10 ether);
+        kernal.grantRole(TOKENSHIELD_RECOVERY_EXECUTOR, recoveryAddress);
     }
 
     function predictAccount(
@@ -379,9 +391,9 @@ contract BaseSetup is Test {
                 _unsignedUserOp.accountGasLimits,
                 _unsignedUserOp.preVerificationGas,
                 _unsignedUserOp.gasFees
-                // keccak256(bytes(_unsignedUserOp.paymasterAndData))
             )
         );
+        // keccak256(bytes(_unsignedUserOp.paymasterAndData))
     }
 
     function domainSeparator(address verifyingContract) internal view returns (bytes32 domainSeperator) {

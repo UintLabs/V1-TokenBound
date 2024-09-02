@@ -1,7 +1,4 @@
-
-
 interface ITokenshieldSafe7579 {
-    
     /**
      * @dev checks if a Module is installed in account
      */

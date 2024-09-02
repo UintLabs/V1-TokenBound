@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-v3
 pragma solidity 0.8.25;
 
-
 import { Script } from "forge-std/Script.sol";
 import { MockRegistry } from "safe7579/test/mocks/MockRegistry.sol";
 import { TokenshieldSafe7579 } from "src/TokenshieldSafe7579.sol";
@@ -11,15 +10,14 @@ import { BlockSafeGuard } from "src/guard/BlockSafeGuard.sol";
 import { GuardianValidator } from "src/modules/GuardianValidator.sol";
 import { RecoveryModule } from "src/modules/RecoveryModule.sol";
 import { MockERC20Target } from "../test/unit/mocks/MockERC20Target.sol";
-import {BaseSetup} from "test/unit/BaseSetup.t.sol";
+import { BaseSetup } from "test/unit/BaseSetup.t.sol";
 import { IERC7484 } from "safe7579/src/interfaces/IERC7484.sol";
 import { IEntryPoint } from "account-abstraction/interfaces/IEntryPoint.sol";
 import { Safe } from "@safe-global/safe-contracts/contracts/Safe.sol";
 import { SafeProxy, SafeProxyFactory } from "@safe-global/safe-contracts/contracts/proxies/SafeProxyFactory.sol";
-contract SendTx is Script, BaseSetup {
-    
 
-    function run()  external {
+contract SendTx is Script, BaseSetup {
+    function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
         sendTx();
