@@ -2,5 +2,5 @@
 pragma solidity 0.8.25;
 
 interface IRecoveryExecutor {
-    function isRecoverying(address account) external view returns (bool);
+    function isRecovering(address account) external view returns (bool);
 }

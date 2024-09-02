@@ -12,8 +12,10 @@ import { ITokenshieldKernal } from "src/interfaces/ITokenshieldKernal.sol";
 contract RecoveryModule is IExecutor {
     struct AccountStatus {
         address nominee;
+        uint64 recoveryEndTime;
+        address newOwner;
         bool isInitialized;
-        bool isRecoverying;
+        // bool isRecoverying;
     }
 
     ITokenshieldKernal immutable kernal;
@@ -24,6 +26,20 @@ contract RecoveryModule is IExecutor {
         kernal = ITokenshieldKernal(_kernal);
     }
 
+    modifier onlyInitialised(address account) {
+        if (!getAccountStatus(account).isInitialized) {
+            revert Tokenshield_Executor_Recovery_AccountNotInitialized();
+        }
+        _;
+    }
+
+    modifier whenNotRecoverying(address account) {
+        if (isRecovering(account)) {
+            revert Tokenshield_Account_Already_Recoverying();
+        }
+        _;
+    }
+
     /**
      * @dev This function is called by the smart account during installation of the module
      *  arbitrary data that may be required on the module during `onInstall`
@@ -31,11 +47,9 @@ contract RecoveryModule is IExecutor {
      *
      * MUST revert on error (i.e. if module is already enabled)
      */
-    function onInstall(bytes calldata) external 
-    /**
-     * data
-     */
-    {
+    function onInstall(bytes calldata data) external {
+        address initialNominee = abi.decode(data, (address));
+        accountStatus[msg.sender].nominee = initialNominee;
         accountStatus[msg.sender].isInitialized = true;
     }
 
@@ -65,16 +79,17 @@ contract RecoveryModule is IExecutor {
     /**
      * @dev This function is used to start the recovery process
      */
-    function startRecovery(address account, address newOwner, bytes memory signatures) external {
+    function startRecovery(
+        address account,
+        address newOwner,
+        bytes memory signatures
+    )
+        external
+        onlyInitialised(account)
+        whenNotRecoverying(account)
+    {
         if (account == address(0) || newOwner == address(0)) {
             revert Tokenshield_ZeroAddress();
-        }
-        if (!getAccountStatus(account).isInitialized) {
-            revert Tokenshield_Executor_Recovery_AccountNotInitialized();
-        }
-
-        if (getAccountStatus(account).isRecoverying) {
-            revert Tokenshield_Account_Already_Recoverying();
         }
 
         // address guardianValidator = kernal.getRoleMember(TOKENSHIELD_GUARDIAN_VALIDATOR, 0);
@@ -85,14 +100,30 @@ contract RecoveryModule is IExecutor {
         // bool isTokenshieldValidatorInstalled =
         //     ITokenshieldSafe7579(account).isModuleInstalled(MODULE_TYPE_VALIDATOR, guardianValidator, "");
         // if (isTokenshieldValidatorInstalled) { }
-        // checkSignatures(account, signatures);
+        checkSignatures(account, newOwner, signatures);
 
-        accountStatus[account].isRecoverying = true;
+        // accountStatus[account].isRecoverying = true;
+        accountStatus[account].newOwner = newOwner;
     }
 
     function completeRecovery(address account) external { }
 
     function stopRecovery(address account, bytes memory signatures) external { }
+
+    /**
+     * @dev Function to change the nominee of the account. SHould be called
+     * @param account The smart account whose nominee is being changed
+     * @param newNominee The address of the new nominee to be set
+     * @param signatures  The signature of the account owner and the guardianValidator
+     */
+    function changeNominee(
+        address account,
+        address newNominee,
+        bytes memory signatures
+    )
+        external
+        onlyInitialised(account)
+    { }
 
     /**
      * @dev Returns if the module was already initialized for a provided smartaccount
@@ -105,11 +136,9 @@ contract RecoveryModule is IExecutor {
         return accountStatus[account].isInitialized;
     }
 
-    function isRecoverying(address account) external view returns (bool) {
-        return accountStatus[account].isRecoverying;
+    function isRecovering(address account) public view returns (bool) {
+        return accountStatus[account].recoveryEndTime > block.timestamp;
     }
 
-    // function checkSignatures(account) internal  returns () {
-
-    // }
+    function checkSignatures(address account, address newOwner, bytes memory signatures) internal { }
 }

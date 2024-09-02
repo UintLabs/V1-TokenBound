@@ -244,7 +244,8 @@ contract BaseSetup is Test {
         console.log("Validator Init Data- ");
         console.logBytes(validatorInitData);
         executors = new ModuleInit[](1);
-        executors[0] = ModuleInit({ module: address(defaultExecutor), initData: bytes("") });
+        executors[0] =
+            ModuleInit({ module: address(defaultExecutor), initData: abi.encode(guardianDefaultNominee.addr) });
         fallbacks = new ModuleInit[](0);
         hooks = new ModuleInit[](0);
     }

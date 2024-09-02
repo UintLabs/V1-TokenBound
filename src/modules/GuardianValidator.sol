@@ -199,6 +199,6 @@ contract GuardianValidator is IValidator, EIP712, SignatureDecoder {
 
     function isAccountPaused(address account) internal view returns (bool isPaused) {
         address recoveryExecutorAddress = kernal.getRoleMember(TOKENSHIELD_RECOVERY_EXECUTOR, 0);
-        isPaused = IRecoveryExecutor(recoveryExecutorAddress).isRecoverying(account);
+        isPaused = IRecoveryExecutor(recoveryExecutorAddress).isRecovering(account);
     }
 }
