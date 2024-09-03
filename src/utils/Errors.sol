@@ -13,3 +13,4 @@ error Tokenshield_Executor_Recovery_AccountNotInitialized();
 error Tokenshield_Account_Already_Recoverying();
 error Tokenshield_Only_Recovery_Executor();
 error Tokenshield_Account_Paused();
+error Tokenshield_Recovery_Time_NotValid();

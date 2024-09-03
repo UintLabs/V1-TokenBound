@@ -15,8 +15,8 @@ contract RecoveryModule is IExecutor {
         uint64 recoveryEndTime;
         address newOwner;
         bool isInitialized;
-        // bool isRecoverying;
     }
+    // bool isRecoverying;
 
     ITokenshieldKernal immutable kernal;
 
@@ -82,6 +82,7 @@ contract RecoveryModule is IExecutor {
     function startRecovery(
         address account,
         address newOwner,
+        uint64 recoveryEndTime,
         bytes memory signatures
     )
         external
@@ -92,18 +93,15 @@ contract RecoveryModule is IExecutor {
             revert Tokenshield_ZeroAddress();
         }
 
-        // address guardianValidator = kernal.getRoleMember(TOKENSHIELD_GUARDIAN_VALIDATOR, 0);
-        // if (guardianValidator == address(0)) {
-        //     revert Tokenshield_ZeroAddress();
-        // }
+        if (recoveryEndTime < uint64(block.timestamp) + 3 days) {
+            revert Tokenshield_Recovery_Time_NotValid();
+        }
 
-        // bool isTokenshieldValidatorInstalled =
-        //     ITokenshieldSafe7579(account).isModuleInstalled(MODULE_TYPE_VALIDATOR, guardianValidator, "");
-        // if (isTokenshieldValidatorInstalled) { }
-        checkSignatures(account, newOwner, signatures);
+        checkSignatures(account, newOwner, recoveryEndTime, signatures);
 
         // accountStatus[account].isRecoverying = true;
         accountStatus[account].newOwner = newOwner;
+        accountStatus[account].recoveryEndTime = recoveryEndTime;
     }
 
     function completeRecovery(address account) external { }
@@ -140,5 +138,19 @@ contract RecoveryModule is IExecutor {
         return accountStatus[account].recoveryEndTime > block.timestamp;
     }
 
-    function checkSignatures(address account, address newOwner, bytes memory signatures) internal { }
+    function checkSignatures(address account, address newOwner, uint64 recoveryEndTime, bytes memory signatures) internal { }
+
+    function getRecoveryHash(address account, address oldOwner, address newOwner, uint64 recoveryEndTime) public pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256(
+                    "Recovery(address account,address oldOwner,address newOwner,uint64 recoveryNonce)"
+                ),
+                account,
+                oldOwner,
+                newOwner,
+                recoveryEndTime
+            )
+        );
+    }
 }
