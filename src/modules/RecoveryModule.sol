@@ -14,6 +14,8 @@ import { SignatureDecoder } from "@safe-global/safe-contracts/contracts/common/S
 
 import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { ISafe2 as ISafe } from "../interfaces/ISafe2.sol";
+
 
 contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
     using SignatureChecker for address;
@@ -45,6 +47,13 @@ contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
     modifier whenNotRecoverying(address account) {
         if (isRecovering(account)) {
             revert Tokenshield_Account_Already_Recoverying();
+        }
+        _;
+    }
+
+    modifier whenRecoverying(address account) {
+        if (!isRecovering(account)) {
+            revert Tokenshield_Account_Not_Recoverying();
         }
         _;
     }
@@ -115,9 +124,14 @@ contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
         emit Tokenshield_RecoveryStarted(account, newOwner, recoveryEndTime);
     }
 
-    function completeRecovery(address account) external { }
+    function stopRecovery(address account, bytes memory signatures) external whenRecoverying(account) {
+        checkSignaturesForRecovery(account, signatures);
 
-    function stopRecovery(address account, bytes memory signatures) external { }
+        accountStatus[account].newOwner = address(0);
+        accountStatus[account].recoveryEndTime = 0;
+    }
+
+    function completeRecovery(address account) external { }
 
     /**
      * @dev Function to change the nominee of the account. SHould be called
@@ -159,8 +173,8 @@ contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
         view
     {
         // Get the EIP712 Hash
-        bytes32 transactionHash = getRecoveryHash(account, newOwner, recoveryEndTime);
-        bytes32 digest = _hashTypedDataV4(transactionHash);
+        bytes32 recoveryHash = getRecoveryHash(account, newOwner, recoveryEndTime);
+        bytes32 digest = _hashTypedDataV4(recoveryHash);
 
         // Split the Signature
         (uint8 v1, bytes32 r1, bytes32 s1) = signatureSplit(signatures, 0);
@@ -189,6 +203,40 @@ contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
         }
         if (!kernal.isApprovedGuardian(guardianSigner)) revert Tokenshield_InvalidGuardian();
     }
+
+    function checkSignaturesForRecovery(address account, bytes memory signatures) internal view {
+        AccountStatus memory _accountStatus = getAccountStatus(account);
+        // Get the EIP712 Hash
+        bytes32 recoveryHash = getRecoveryHash(account, _accountStatus.newOwner, _accountStatus.recoveryEndTime);
+        bytes32 digest = _hashTypedDataV4(recoveryHash);
+
+        // Split the Signature
+        (uint8 v1, bytes32 r1, bytes32 s1) = signatureSplit(signatures, 0);
+        (uint8 v2, bytes32 r2, bytes32 s2) = signatureSplit(signatures, 1);
+
+        ////// Verify signature
+        //// Check owner signature and then tokenshield signature
+        // Owner Signer can only be EOA
+        (address ownerSigner,,) = digest.tryRecover(v1, r1, s1);
+
+        // Guardian Signer can only be EOA
+        (address guardianSigner,,) = digest.tryRecover(v2, r2, s2);
+
+        if (ownerSigner == address(0) || guardianSigner == address(0)) {
+            
+            revert Tokenshield_InvalidSignature(ownerSigner, guardianSigner);
+        }
+        if (guardianSigner == address(0)) {
+            revert Tokenshield_InvalidGuardian();
+        }
+        if (!kernal.isApprovedGuardian(guardianSigner)) revert Tokenshield_InvalidGuardian();
+        ISafe _account = ISafe(account);
+
+        if (!_account.isOwner(ownerSigner)) {
+                revert Tokenshield_NotValidOwner();
+            }
+    }
+
 
     function getRecoveryHash(address account, address newOwner, uint64 recoveryEndTime) public pure returns (bytes32) {
         return keccak256(

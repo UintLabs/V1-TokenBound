@@ -15,3 +15,4 @@ error Tokenshield_Only_Recovery_Executor();
 error Tokenshield_Account_Paused();
 error Tokenshield_Recovery_Time_NotValid();
 error Tokenshield_NotValidNominee();
+error Tokenshield_Account_Not_Recoverying();
