@@ -5,6 +5,7 @@ import { IExecutor } from "erc7579/interfaces/IERC7579Module.sol";
 import "erc7579/interfaces/IERC7579Module.sol";
 import "src/utils/Errors.sol";
 import "src/utils/Roles.sol";
+import "src/utils/Events.sol";
 import { ITokenshieldSafe7579 } from "src/interfaces/ITokenshieldSafe7579.sol";
 
 import { ITokenshieldKernal } from "src/interfaces/ITokenshieldKernal.sol";
@@ -110,6 +111,8 @@ contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
         // accountStatus[account].isRecoverying = true;
         accountStatus[account].newOwner = newOwner;
         accountStatus[account].recoveryEndTime = recoveryEndTime;
+
+        emit Tokenshield_RecoveryStarted(account, newOwner, recoveryEndTime);
     }
 
     function completeRecovery(address account) external { }

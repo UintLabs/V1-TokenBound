@@ -186,11 +186,11 @@ contract TokenshieldSafe7579Test is BaseSetup {
         bytes32 SLOT4 = bytes32(uint256(0x04));
         bytes32 SLOT5 = bytes32(uint256(0x05));
         bytes32 slotData3 = vm.load(address(userAccount), SLOT3);
-        console.logBytes32(slotData3);
+        // console.logBytes32(slotData3);
         bytes32 slotData4 = vm.load(address(userAccount), SLOT4);
-        console.logBytes32(slotData4);
+        // console.logBytes32(slotData4);
         bytes32 slotData5 = vm.load(address(userAccount), SLOT5);
-        console.logBytes32(slotData5);
+        // console.logBytes32(slotData5);
         // address guardAddress = address(uint160(uint256(slotData)));
         // console.log(guardAddress);
 

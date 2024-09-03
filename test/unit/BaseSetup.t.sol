@@ -127,8 +127,8 @@ contract BaseSetup is Test {
         PackedUserOperation memory userOp = getDefaultUserOp(address(0), address(defaultValidator));
 
         // Setup Calldata in UserOp
-        console.log(signer1.addr);
-        console.log(signer1.key);
+        // console.log(signer1.addr);
+        // console.log(signer1.key);
         Safe7579Launchpad.InitData memory initData = Safe7579Launchpad.InitData({
             singleton: address(singleton),
             owners: Solarray.addresses(signer1.addr),
@@ -140,28 +140,28 @@ contract BaseSetup is Test {
             callData: getCallExecutionData()
         });
 
-        console.log("Execution Calldata- ");
-        console.logBytes(initData.callData);
+        // console.log("Execution Calldata- ");
+        // console.logBytes(initData.callData);
 
-        console.log("SetupData- ");
-        console.logBytes(initData.setupData);
+        // console.log("SetupData- ");
+        // console.logBytes(initData.setupData);
 
         userOp.callData = abi.encodeCall(Safe7579Launchpad.setupSafe, (initData));
-        console.log("Calldata");
-        console.logBytes(userOp.callData);
+        // console.log("Calldata");
+        // console.logBytes(userOp.callData);
 
         // Set up init Code for UserOp
         bytes32 salt = keccak256(abi.encodePacked(signer1.addr));
 
         bytes32 initHash = launchpad.hash(initData);
-        console.log("Init Hash- ");
-        console.logBytes32(initHash);
+        // console.log("Init Hash- ");
+        // console.logBytes32(initHash);
         bytes memory factoryInitializer = abi.encodeCall(
             Safe7579Launchpad.preValidationSetup,
             (initHash, address(guardSetter), abi.encodeCall(BlockGuardSetter.setGuard, (address(blockSafeGuard))))
         );
 
-        console.logBytes(factoryInitializer);
+        // console.logBytes(factoryInitializer);
 
         userOp.initCode = abi.encodePacked(
             address(safeProxyFactory),
@@ -241,8 +241,8 @@ contract BaseSetup is Test {
         validators = new ModuleInit[](1);
         bytes memory validatorInitData = abi.encode(_owner);
         validators[0] = ModuleInit({ module: address(defaultValidator), initData: validatorInitData });
-        console.log("Validator Init Data- ");
-        console.logBytes(validatorInitData);
+        // console.log("Validator Init Data- ");
+        // console.logBytes(validatorInitData);
         executors = new ModuleInit[](1);
         executors[0] =
             ModuleInit({ module: address(defaultExecutor), initData: abi.encode(guardianDefaultNominee.addr) });
@@ -259,10 +259,10 @@ contract BaseSetup is Test {
         virtual
         returns (bytes memory)
     {
-        console.log("Attester 1");
-        console.log(makeAddr("attester1"));
-        console.log("Attester 1");
-        console.log(makeAddr("attester2"));
+        // console.log("Attester 1");
+        // console.log(makeAddr("attester1"));
+        // console.log("Attester 1");
+        // console.log(makeAddr("attester2"));
         return abi.encodeCall(
             Safe7579Launchpad.initSafe7579,
             (
@@ -348,7 +348,7 @@ contract BaseSetup is Test {
         });
     }
 
-    function getDigest(PackedUserOperation memory _userOp) internal view returns (bytes32 digest) {
+    function getDigest(PackedUserOperation memory _userOp) internal returns (bytes32 digest) {
         UnsignedUserOperation memory unsignedUserOp = getUnsignedUserOp(_userOp);
         // // Get the EIP712 Hash
         bytes32 transactionHash = getTransactionHash(unsignedUserOp);
