@@ -72,6 +72,12 @@ contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
      */
     function onInstall(bytes calldata data) external {
         address initialNominee = abi.decode(data, (address));
+        if (initialNominee == address(0)) {
+            revert Tokenshield_ZeroAddress();
+        }
+        if (initialNominee == msg.sender) {
+            revert Tokenshield_Recovery_AccountCantBeOwnNominee();
+        }
         accountStatus[msg.sender].nominee = initialNominee;
         accountStatus[msg.sender].isInitialized = true;
     }

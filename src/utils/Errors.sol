@@ -18,3 +18,4 @@ error Tokenshield_NotValidNominee();
 error Tokenshield_Account_Not_Recoverying();
 error Tokenshield_New_Owner_Not_Set();
 error Tokenshield_RecoveryNotSuccess();
+error Tokenshield_Recovery_AccountCantBeOwnNominee();
