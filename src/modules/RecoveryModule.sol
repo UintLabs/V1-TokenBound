@@ -70,7 +70,7 @@ contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
      *
      * MUST revert on error (i.e. if module is already enabled)
      */
-    function onInstall(bytes calldata data) external {
+    function onInstall(bytes calldata data) external {// @note @follow-up nominee can be set as the owner itself which'll break recovery
         address initialNominee = abi.decode(data, (address));
         if (initialNominee == address(0)) {
             revert Tokenshield_ZeroAddress();
@@ -121,6 +121,12 @@ contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
     {
         if (account == address(0) || newOwner == address(0) || oldOwner == address(0)) {
             revert Tokenshield_ZeroAddress();
+        }
+        if (newOwner == getAccountStatus(account).nominee) {
+            revert Tokenshield_OwnerCantBeNominee();
+        }
+        if (newOwner == account || newOwner == oldOwner) {
+            revert Tokenshield_New_Owner_Not_Valid();
         }
 
         if (!ISafe(account).isOwner(oldOwner)) {

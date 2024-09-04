@@ -105,7 +105,7 @@ contract TokenshieldSafe7579Test is BaseSetup {
         defaultExecutor.startRecovery(address(userAccount), newOwner.addr, address(0), recoveryEndTime, signatures);
 
         vm.expectRevert(Tokenshield_ZeroAddress.selector);
-        defaultExecutor.startRecovery(address(userAccount), address(0), address(0), recoveryEndTime, signatures);   
+        defaultExecutor.startRecovery(address(userAccount), address(0), address(0), recoveryEndTime, signatures);
     }
 
     function test_StartRecovery_RevertsWhenOldOwnerNotValid() external setUpAccount {
@@ -118,7 +118,44 @@ contract TokenshieldSafe7579Test is BaseSetup {
         bytes memory signatures = abi.encodePacked(r1, s1, v1, r2, s2, v2);
 
         vm.expectRevert(Tokenshield_NotValidOwner.selector);
-        defaultExecutor.startRecovery(address(userAccount), newOwner.addr, receiverAddress.addr, recoveryEndTime, signatures);
+        defaultExecutor.startRecovery(
+            address(userAccount), newOwner.addr, receiverAddress.addr, recoveryEndTime, signatures
+        );
+    }
+
+    function test_StartRecovery_RevertsWhenNewOwnerIsNominee() external setUpAccount {
+        uint64 recoveryEndTime = uint64(block.timestamp) + THREE_DAYS + 1 hours;
+
+        bytes32 digest = getRecoveryDigest(address(userAccount), newOwner.addr, recoveryEndTime);
+        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(guardianDefaultNominee.key, digest);
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(guardian1.key, digest);
+
+        bytes memory signatures = abi.encodePacked(r1, s1, v1, r2, s2, v2);
+
+        vm.expectRevert(Tokenshield_OwnerCantBeNominee.selector);
+        defaultExecutor.startRecovery(
+            address(userAccount), guardianDefaultNominee.addr, signer1.addr, recoveryEndTime, signatures
+        );
+    }
+
+    function test_StartRecovery_RevertsWhenInvalidNominee() external setUpAccount {
+        uint64 recoveryEndTime = uint64(block.timestamp) + THREE_DAYS + 1 hours;
+
+        bytes32 digest = getRecoveryDigest(address(userAccount), newOwner.addr, recoveryEndTime);
+        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(guardianDefaultNominee.key, digest);
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(guardian1.key, digest);
+
+        bytes memory signatures = abi.encodePacked(r1, s1, v1, r2, s2, v2);
+
+        vm.expectRevert(Tokenshield_New_Owner_Not_Valid.selector);
+        defaultExecutor.startRecovery(
+            address(userAccount), address(userAccount), signer1.addr, recoveryEndTime, signatures
+        );
+
+        vm.expectRevert(Tokenshield_New_Owner_Not_Valid.selector);
+        defaultExecutor.startRecovery(
+            address(userAccount), signer1.addr, signer1.addr, recoveryEndTime, signatures
+        );
     }
 
     function test_StartRecovery_RevertsWhenTimeNotValid() external setUpAccount {
@@ -134,9 +171,7 @@ contract TokenshieldSafe7579Test is BaseSetup {
         defaultExecutor.startRecovery(address(userAccount), newOwner.addr, signer1.addr, recoveryEndTime, signatures);
     }
 
-    function test_StartRecovery_() external {
-        
-    }
+    function test_StartRecovery_() external { }
 
     /////////////////////////////////////
     ////////// Stop Recovery ////////////
