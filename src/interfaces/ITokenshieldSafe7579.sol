@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: GPL3
+pragma solidity 0.8.25;
+
+import { ModeCode } from "safe7579/src/lib/ModeLib.sol";
+
 interface ITokenshieldSafe7579 {
     /**
      * @dev checks if a Module is installed in account
@@ -10,4 +15,11 @@ interface ITokenshieldSafe7579 {
         external
         view
         returns (bool);
+
+    function executeFromExecutor(
+        ModeCode mode,
+        bytes calldata executionCalldata
+    )
+        external
+        returns (bytes[] memory returnDatas);
 }

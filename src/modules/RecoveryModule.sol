@@ -16,6 +16,9 @@ import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/Sig
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { ISafe2 as ISafe } from "../interfaces/ISafe2.sol";
 
+import { IERC7579Account, Execution } from "erc7579/interfaces/IERC7579Account.sol";
+import { ExecutionLib } from "erc7579/lib/ExecutionLib.sol";
+import { ModeLib } from "erc7579/lib/ModeLib.sol";
 
 contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
     using SignatureChecker for address;
@@ -25,10 +28,12 @@ contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
         address nominee;
         uint64 recoveryEndTime;
         address newOwner;
+        address oldOwner;
         bool isInitialized;
     }
     // bool isRecoverying;
 
+    address internal constant SENTINEL_OWNERS = address(0x1);
     ITokenshieldKernal immutable kernal;
 
     mapping(address account => AccountStatus status) private accountStatus;
@@ -100,6 +105,7 @@ contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
     function startRecovery(
         address account,
         address newOwner,
+        address oldOwner,
         uint64 recoveryEndTime,
         bytes memory signatures
     )
@@ -107,8 +113,12 @@ contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
         onlyInitialised(account)
         whenNotRecoverying(account)
     {
-        if (account == address(0) || newOwner == address(0)) {
+        if (account == address(0) || newOwner == address(0) || oldOwner == address(0)) {
             revert Tokenshield_ZeroAddress();
+        }
+
+        if (!ISafe(account).isOwner(oldOwner)) {
+            revert Tokenshield_NotValidOwner();
         }
 
         if (recoveryEndTime < uint64(block.timestamp) + 3 days) {
@@ -119,6 +129,7 @@ contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
 
         // accountStatus[account].isRecoverying = true;
         accountStatus[account].newOwner = newOwner;
+        accountStatus[account].oldOwner = oldOwner;
         accountStatus[account].recoveryEndTime = recoveryEndTime;
 
         emit Tokenshield_RecoveryStarted(account, newOwner, recoveryEndTime);
@@ -128,10 +139,38 @@ contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
         checkSignaturesForRecovery(account, signatures);
 
         accountStatus[account].newOwner = address(0);
+        accountStatus[account].oldOwner = address(0);
         accountStatus[account].recoveryEndTime = 0;
     }
 
-    function completeRecovery(address account) external { }
+    function completeRecovery(address account) external onlyInitialised(account) whenNotRecoverying(account) {
+        // Check if recovery period over
+        AccountStatus memory _accountStatus = getAccountStatus(account);
+
+        if (_accountStatus.newOwner == address(0)) {
+            revert Tokenshield_New_Owner_Not_Set();
+        }
+        accountStatus[account].newOwner = address(0);
+        accountStatus[account].oldOwner = address(0);
+        accountStatus[account].recoveryEndTime = 0;
+
+        // Change Owner to new owner in safe
+
+        // Create calldata for the account to execute
+        bytes memory targetCalldata =
+            abi.encodeCall(ISafe.swapOwner, (SENTINEL_OWNERS, _accountStatus.oldOwner, _accountStatus.newOwner));
+
+        // Encode the call into the calldata
+        bytes memory executeCalldata = abi.encodeCall(
+            IERC7579Account.executeFromExecutor,
+            (ModeLib.encodeSimpleSingle(), ExecutionLib.encodeSingle(account, uint256(0), targetCalldata))
+        );
+        (bool success, ) = address(account).call(executeCalldata);
+
+        if (!success) {
+            revert Tokenshield_RecoveryNotSuccess();
+        }
+    }
 
     /**
      * @dev Function to change the nominee of the account. SHould be called
@@ -223,7 +262,6 @@ contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
         (address guardianSigner,,) = digest.tryRecover(v2, r2, s2);
 
         if (ownerSigner == address(0) || guardianSigner == address(0)) {
-            
             revert Tokenshield_InvalidSignature(ownerSigner, guardianSigner);
         }
         if (guardianSigner == address(0)) {
@@ -233,10 +271,9 @@ contract RecoveryModule is IExecutor, EIP712, SignatureDecoder {
         ISafe _account = ISafe(account);
 
         if (!_account.isOwner(ownerSigner)) {
-                revert Tokenshield_NotValidOwner();
-            }
+            revert Tokenshield_NotValidOwner();
+        }
     }
-
 
     function getRecoveryHash(address account, address newOwner, uint64 recoveryEndTime) public pure returns (bytes32) {
         return keccak256(

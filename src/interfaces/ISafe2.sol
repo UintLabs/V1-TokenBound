@@ -17,5 +17,14 @@ interface ISafe2 is ISafe {
 
     function isOwner(address owner) external view returns (bool);
 
+    /**
+     * @notice Replaces the owner `oldOwner` in the Safe with `newOwner`. from the Owner Manager Contract inherited by safe
+     * @dev This can only be done via a Safe transaction.
+     * @param prevOwner Owner that pointed to the owner to be replaced in the linked list
+     * @param oldOwner Owner address to be replaced.
+     * @param newOwner New owner address.
+     */
+    function swapOwner(address prevOwner, address oldOwner, address newOwner) external;
+
     // function getGuard() internal view returns (address guard);
 }

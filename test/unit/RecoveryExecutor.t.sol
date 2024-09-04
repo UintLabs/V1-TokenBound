@@ -2,6 +2,8 @@
 pragma solidity 0.8.25;
 
 import { BaseSetup } from "./BaseSetup.t.sol";
+import { ISafe2 as ISafe } from "src/interfaces/ISafe2.sol";
+import { RecoveryModule } from "src/modules/RecoveryModule.sol";
 
 contract TokenshieldSafe7579Test is BaseSetup {
     Account receiverAddress = makeAccount("RECEIVER_ADDRESS");
@@ -32,7 +34,12 @@ contract TokenshieldSafe7579Test is BaseSetup {
 
         bytes memory signatures = abi.encodePacked(r1, s1, v1, r2, s2, v2);
 
-        defaultExecutor.startRecovery(address(userAccount), newOwner.addr, recoveryEndTime, signatures);
+        defaultExecutor.startRecovery(address(userAccount), newOwner.addr, signer1.addr, recoveryEndTime, signatures);
+
+        RecoveryModule.AccountStatus memory accountStatus = defaultExecutor.getAccountStatus(address(userAccount));
+        assertEq(accountStatus.newOwner, newOwner.addr);
+        assertEq(accountStatus.oldOwner, signer1.addr);
+        assert(accountStatus.recoveryEndTime != 0);
     }
 
     modifier startRecovery() {
@@ -44,7 +51,7 @@ contract TokenshieldSafe7579Test is BaseSetup {
 
         bytes memory signatures = abi.encodePacked(r1, s1, v1, r2, s2, v2);
 
-        defaultExecutor.startRecovery(address(userAccount), newOwner.addr, recoveryEndTime, signatures);
+        defaultExecutor.startRecovery(address(userAccount), newOwner.addr, signer1.addr, recoveryEndTime, signatures);
         _;
     }
 
@@ -57,6 +64,28 @@ contract TokenshieldSafe7579Test is BaseSetup {
         bytes memory signatures = abi.encodePacked(r1, s1, v1, r2, s2, v2);
 
         defaultExecutor.stopRecovery(address(userAccount), signatures);
+
+        RecoveryModule.AccountStatus memory accountStatus = defaultExecutor.getAccountStatus(address(userAccount));
+        assertEq(accountStatus.newOwner, address(0));
+        assertEq(accountStatus.oldOwner, address(0));
+        assertEq(accountStatus.recoveryEndTime, 0);
+    }
+
+    function test_CompleteRecovery() external setUpAccount startRecovery {
+        // Skipping recovery time
+        skip(4 days);
+        defaultExecutor.completeRecovery(address(userAccount));
+
+        RecoveryModule.AccountStatus memory accountStatus = defaultExecutor.getAccountStatus(address(userAccount));
+        assertEq(accountStatus.newOwner, address(0));
+        assertEq(accountStatus.oldOwner, address(0));
+        assertEq(accountStatus.recoveryEndTime, 0);
+
+        bool isNewOwnerSet = ISafe(address(userAccount)).isOwner(newOwner.addr);
+        bool isOldOwnerRemoved = ISafe(address(userAccount)).isOwner(signer1.addr);
+        assertEq(isNewOwnerSet, true);
+        assertEq(isOldOwnerRemoved, false);
+
     }
 
     function getRecoveryDigest(
