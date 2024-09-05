@@ -16,13 +16,37 @@ import { IEntryPoint } from "account-abstraction/interfaces/IEntryPoint.sol";
 import { Safe } from "@safe-global/safe-contracts/contracts/Safe.sol";
 import { SafeProxyFactory } from "@safe-global/safe-contracts/contracts/proxies/SafeProxyFactory.sol";
 import { TokenshieldKernal } from "src/TokenshieldKernal.sol";
+import { HelpersConfig } from "script/helpers/HelpersConfig.s.sol";
+import "src/utils/Roles.sol";
+import { console } from "forge-std/console.sol";
 
-contract Deploy is Script, BaseSetup {
+
+contract Deploy is Script, BaseSetup, HelpersConfig {
+    ChainConfig config;
+
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        config = getConfig();
+        uint256 deployerPrivateKey = config.deployerPrivateKey;
         vm.startBroadcast(deployerPrivateKey);
         deployContracts();
         vm.stopBroadcast();
+
+        // Initialise GuardianValidator
+        (address[] memory guardians, bool[] memory isEnabled) = getGuardiansList(address(defaultValidator), config.guardian);
+        
+        console.log(mfaSetterAdmin.addr);
+        console.log(mfaSetter.addr);
+        console.log(moduleSetter.addr);
+        
+        vm.broadcast(mfaSetterAdmin.key);
+        kernal.grantRole(MFA_SETTER, mfaSetter.addr);
+
+        vm.broadcast(mfaSetter.key);
+        kernal.setGuardian(guardians, isEnabled);
+
+        // Initialise Executor
+        vm.broadcast(moduleSetter.key);
+        kernal.grantRole(TOKENSHIELD_RECOVERY_EXECUTOR, address(defaultExecutor));
     }
 
     function deployContracts() internal {
@@ -45,22 +69,11 @@ contract Deploy is Script, BaseSetup {
         // Create Guardian Validator
         defaultValidator = new GuardianValidator{ salt: "12345" }(address(kernal));
 
-        // Initialise GuardianValidator
-        setGuardiansForGuardianValidator(address(defaultValidator), guardian1);
-
         // create executor
         defaultExecutor = new RecoveryModule{ salt: "12345" }(address(kernal));
 
+        // setExecutors(address(defaultExecutor));
+
         target = new MockERC20Target{ salt: "12345" }();
     }
-
-    // function setGuardiansForGuardianValidator(address _validator, Account memory _guardian) public virtual {
-    //     // Initialise Validator
-    //     address[] memory guardians = new address[](1);
-    //     guardians[0] = _guardian.addr;
-
-    //     bool[] memory isEnabled = new bool[](1);
-    //     isEnabled[0] = true;
-    //     GuardianValidator(_validator).setGuardian(guardians, isEnabled);
-    // }
 }

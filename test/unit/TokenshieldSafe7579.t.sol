@@ -70,7 +70,7 @@ contract TokenshieldSafe7579Test is BaseSetup {
         userOp.initCode = "";
         userOp.callData = userOpCalldata;
 
-        userOp.signature = getSignature(userOp, signer1, guardian1);
+        userOp.signature = getSignature(userOp, signer1, guardian1, address(defaultValidator));
 
         // Create userOps array
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
@@ -120,7 +120,7 @@ contract TokenshieldSafe7579Test is BaseSetup {
         userOp.initCode = "";
         userOp.callData = userOpCalldata;
 
-        userOp.signature = getSignature(userOp, signer1, guardian1);
+        userOp.signature = getSignature(userOp, signer1, guardian1, address(defaultValidator));
 
         // Create userOps array
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
@@ -165,7 +165,7 @@ contract TokenshieldSafe7579Test is BaseSetup {
         userOp.initCode = "";
         userOp.callData = userOpCalldata;
 
-        userOp.signature = getSignature(userOp, signer1, guardian1);
+        userOp.signature = getSignature(userOp, signer1, guardian1,  address(defaultValidator));
 
         // Create userOps array
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);

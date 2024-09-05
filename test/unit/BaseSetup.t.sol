@@ -33,27 +33,12 @@ import { ModeLib } from "erc7579/lib/ModeLib.sol";
 import { IERC7579Account, Execution } from "erc7579/interfaces/IERC7579Account.sol";
 import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-
 import { TokenshieldKernal } from "src/TokenshieldKernal.sol";
+import { SignatureUtils } from "test/unit/utils/SignatureUtils.t.sol";
+import { Accounts } from "test/unit/utils/Accounts.t.sol";
 import "src/utils/Roles.sol";
 
-contract BaseSetup is Test {
-    struct EIP712Domain {
-        string name;
-        string version;
-        uint256 chainId;
-        address verifyingContract;
-    }
-
-    Account guardian1 = makeAccount("GUARDIAN_1");
-    Account guardianSigner = makeAccount("GUARDIAN_SIGNER");
-    Account guardianDefaultNominee = makeAccount("GUARDIAN_NOMINEE");
-    Account defaultAdmin = makeAccount("DEFAULT_ADMIN");
-    Account mfaSetterAdmin = makeAccount("MFA_SETTER_ADMIN");
-    Account mfaSetter = makeAccount("MFA_SETTER");
-    Account moduleSetter = makeAccount("MODULE_SETTER");
-
+contract BaseSetup is Test, SignatureUtils, Accounts {
     // Safe
     Safe singleton;
     SafeProxyFactory safeProxyFactory;
@@ -61,9 +46,6 @@ contract BaseSetup is Test {
     Safe7579Launchpad launchpad;
     BlockGuardSetter guardSetter;
     BlockSafeGuard blockSafeGuard;
-
-    // Account
-    Account signer1 = makeAccount("SIGNER_1");
 
     // ERC4337
     IEntryPoint entrypoint;
@@ -79,9 +61,6 @@ contract BaseSetup is Test {
 
     // UserAccount
     TokenshieldSafe7579 userAccount;
-
-    string domainName = "TokenShield";
-    string domainVersion = "1";
 
     function setUpEssentialContracts() internal virtual {
         // Setting Up
@@ -175,7 +154,7 @@ contract BaseSetup is Test {
 
         userOp.sender = predict;
 
-        userOp.signature = getSignature(userOp, signer1, guardian1);
+        userOp.signature = getSignature(userOp, signer1, guardian1, address(defaultValidator));
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -291,18 +270,27 @@ contract BaseSetup is Test {
     }
 
     function setGuardiansForGuardianValidator(address _validator, Account memory _guardian) public virtual {
-        // Initialise Validator
-        address[] memory guardians = new address[](1);
-        guardians[0] = _guardian.addr;
-
-        bool[] memory isEnabled = new bool[](1);
-        isEnabled[0] = true;
-
+        (address[] memory guardians, bool[] memory isEnabled) = getGuardiansList(_validator, _guardian);
         hoax(mfaSetterAdmin.addr, 10 ether);
         kernal.grantRole(MFA_SETTER, mfaSetter.addr);
 
         hoax(mfaSetter.addr, 10 ether);
         kernal.setGuardian(guardians, isEnabled);
+    }
+
+    function getGuardiansList(
+        address _validator,
+        Account memory _guardian
+    )
+        public
+        returns (address[] memory guardians, bool[] memory isEnabled)
+    {
+        // Initialise Validator
+        guardians = new address[](1);
+        guardians[0] = _guardian.addr;
+
+        isEnabled = new bool[](1);
+        isEnabled[0] = true;
     }
 
     function setExecutors(address recoveryAddress) public {
@@ -328,107 +316,5 @@ contract BaseSetup is Test {
             salt: _salt,
             factoryInitializer: _factoryInitializer
         });
-    }
-
-    function getUnsignedUserOp(PackedUserOperation memory _userOp)
-        internal
-        pure
-        returns (UnsignedUserOperation memory unsignedUserOp)
-    {
-        // // Create unsigned UserOp
-        unsignedUserOp = UnsignedUserOperation({
-            sender: _userOp.sender,
-            nonce: _userOp.nonce,
-            initCode: _userOp.initCode,
-            callData: _userOp.callData,
-            accountGasLimits: _userOp.accountGasLimits,
-            preVerificationGas: _userOp.preVerificationGas,
-            gasFees: _userOp.gasFees,
-            paymasterAndData: _userOp.paymasterAndData
-        });
-    }
-
-    function getDigest(PackedUserOperation memory _userOp) internal returns (bytes32 digest) {
-        UnsignedUserOperation memory unsignedUserOp = getUnsignedUserOp(_userOp);
-        // // Get the EIP712 Hash
-        bytes32 transactionHash = getTransactionHash(unsignedUserOp);
-        digest = getTransactionHashWithDomainSeperator(transactionHash, address(defaultValidator));
-    }
-
-    function getSignature(
-        PackedUserOperation memory _userOp,
-        Account memory signer,
-        Account memory guardian
-    )
-        internal
-        returns (bytes memory signature)
-    {
-        bytes32 digest = getDigest(_userOp);
-
-        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(signer.key, digest);
-        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(guardian.key, digest);
-        // console.log(guardian.key);
-        signature = abi.encodePacked(r1, s1, v1, r2, s2, v2);
-
-        // console.logBytes32(digest);
-        // console.logBytes32(r2);
-        // console.logBytes32(s2);
-        // console.logUint(v2);
-
-        (address _guardian,,) = ECDSA.tryRecover(digest, v2, r2, s2);
-        assertEq(guardian.addr, _guardian);
-    }
-
-    function getTransactionHash(UnsignedUserOperation memory _unsignedUserOp) public pure returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                keccak256(
-                    "UnsignedUserOperation(address sender,uint256 nonce,bytes initCode,bytes callData,bytes32 accountGasLimits,uint256 preVerificationGas,bytes32 gasFees,bytes paymasterAndData)"
-                ),
-                _unsignedUserOp.sender,
-                _unsignedUserOp.nonce,
-                keccak256(bytes(_unsignedUserOp.initCode)),
-                keccak256(bytes(_unsignedUserOp.callData)),
-                _unsignedUserOp.accountGasLimits,
-                _unsignedUserOp.preVerificationGas,
-                _unsignedUserOp.gasFees
-            )
-        );
-        // keccak256(bytes(_unsignedUserOp.paymasterAndData))
-    }
-
-    function domainSeparator(address verifyingContract) internal view returns (bytes32 domainSeperator) {
-        domainSeperator = getDomainHash(
-            EIP712Domain({
-                name: domainName,
-                version: domainVersion,
-                chainId: block.chainid,
-                verifyingContract: verifyingContract
-            })
-        );
-    }
-
-    function getDomainHash(EIP712Domain memory domain) internal pure returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes(domain.name)),
-                keccak256(bytes(domain.version)),
-                domain.chainId,
-                domain.verifyingContract
-            )
-        );
-    }
-
-    function getTransactionHashWithDomainSeperator(
-        bytes32 transactionHash,
-        address verifyingContract
-    )
-        internal
-        view
-        returns (bytes32)
-    {
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator(verifyingContract), transactionHash));
-        return digest;
     }
 }
